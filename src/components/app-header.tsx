@@ -67,7 +67,15 @@ export function AppHeader() {
         <div className="flex min-w-0 items-baseline gap-2 font-display text-sm">
           <Link to="/" className="text-white/40 hover:text-white/80">Videofy</Link>
           <span className="text-white/20">/</span>
-          <span className="truncate text-white">{currentLabel}</span>
+          {isWidgetChild ? (
+            <>
+              <Link to="/widgets" className="text-white/40 hover:text-white/80">Widgets</Link>
+              <span className="text-white/20">/</span>
+              <span className="truncate text-white">{widgetName ?? "Widget"}</span>
+            </>
+          ) : (
+            <span className="truncate text-white">{currentLabel}</span>
+          )}
         </div>
       </div>
 
