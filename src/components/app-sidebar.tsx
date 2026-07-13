@@ -129,15 +129,20 @@ export function AppSidebar() {
 
         {!collapsed && (
           <div className="mx-3 mt-2 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/40 p-4">
-            <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/60">
-              Growth plan
+            <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/60">
+              <span>Growth plan</span>
+              <span className="text-signal">124%</span>
             </div>
             <div className="mt-1.5 font-display text-lg leading-tight">
-              128 <span className="text-sidebar-foreground/60 text-sm font-normal">/ 200 videos</span>
+              24.8K <span className="text-sidebar-foreground/60 text-sm font-normal">/ 20K impressions</span>
             </div>
             <div className="mt-3 h-1 overflow-hidden rounded-full bg-sidebar-border/50">
-              <div className="h-full w-[64%] rounded-full bg-signal" />
+              <div className="h-full w-full rounded-full bg-signal" />
             </div>
+            <div className="mt-2 text-[11px] text-sidebar-foreground/60">
+              Overage <span className="text-foreground">$5</span> · resets Jul 28
+            </div>
+
             <Button size="sm" className="mt-3 w-full text-xs font-medium">
               Upgrade plan
             </Button>
