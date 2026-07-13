@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Monitor, Smartphone, Tablet } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,14 +10,25 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { widgets, videos } from "@/lib/mock-data";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { videos } from "@/lib/mock-data";
+import {
+  defaultWidgetSettings,
+  useWidgetsStore,
+  type WidgetSettings,
+} from "@/stores/widgets-store";
 
 export const Route = createFileRoute("/widgets/$id")({
   loader: ({ params }) => {
-    const widget = widgets.find((w) => w.id === params.id);
+    const widget = useWidgetsStore.getState().items.find((w) => w.id === params.id);
     if (!widget) throw notFound();
-    return { widget };
+    return { id: params.id };
   },
   component: WidgetCustomizer,
   notFoundComponent: () => (
@@ -32,19 +43,37 @@ export const Route = createFileRoute("/widgets/$id")({
 type Device = "desktop" | "tablet" | "mobile";
 
 function WidgetCustomizer() {
-  const { widget } = Route.useLoaderData();
+  const { id } = Route.useLoaderData();
+  const widget = useWidgetsStore((s) => s.items.find((w) => w.id === id));
+  const stored = useWidgetsStore((s) => s.settings[id]);
+  const updateSettings = useWidgetsStore((s) => s.updateSettings);
+
+  const baseline = stored ?? defaultWidgetSettings;
+  const [draft, setDraft] = useState<WidgetSettings>(baseline);
   const [device, setDevice] = useState<Device>("desktop");
-  const [accent, setAccent] = useState("#c8f542");
-  const [radius, setRadius] = useState(12);
-  const [spacing, setSpacing] = useState(16);
-  const [autoplay, setAutoplay] = useState(true);
-  const [loop, setLoop] = useState(true);
-  const [muted, setMuted] = useState(true);
-  const [controls, setControls] = useState(false);
-  const [font, setFont] = useState("Geist");
-  const [customCss, setCustomCss] = useState("");
+
+  useEffect(() => {
+    setDraft(baseline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, stored]);
+
+  if (!widget) return null;
 
   const previewW = device === "desktop" ? "100%" : device === "tablet" ? 720 : 360;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+
+  const set = <K extends keyof WidgetSettings>(key: K, value: WidgetSettings[K]) =>
+    setDraft((d) => ({ ...d, [key]: value }));
+
+  const handleSave = () => {
+    updateSettings(id, draft);
+    toast.success("Widget saved");
+  };
+
+  const handleCancel = () => {
+    setDraft(baseline);
+    toast("Changes discarded");
+  };
 
   return (
     <PageShell
@@ -54,9 +83,16 @@ function WidgetCustomizer() {
       actions={
         <>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/widgets"><ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Widgets</Link>
+            <Link to="/widgets">
+              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Widgets
+            </Link>
           </Button>
-          <Button size="sm" onClick={() => toast.success("Widget saved")}>Save changes</Button>
+          <Button variant="outline" size="sm" onClick={handleCancel} disabled={!dirty}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={!dirty}>
+            Save changes
+          </Button>
         </>
       }
     >
@@ -74,22 +110,38 @@ function WidgetCustomizer() {
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={accent}
-                    onChange={(e) => setAccent(e.target.value)}
+                    value={draft.accent}
+                    onChange={(e) => set("accent", e.target.value)}
                     className="h-9 w-12 cursor-pointer rounded-md border bg-transparent"
                   />
-                  <Input value={accent} onChange={(e) => setAccent(e.target.value)} className="font-mono" />
+                  <Input
+                    value={draft.accent}
+                    onChange={(e) => set("accent", e.target.value)}
+                    className="font-mono"
+                  />
                 </div>
               </Field>
-              <Field label={`Border radius · ${radius}px`}>
-                <Slider value={[radius]} max={32} step={1} onValueChange={([v]) => setRadius(v)} />
+              <Field label={`Border radius · ${draft.radius}px`}>
+                <Slider
+                  value={[draft.radius]}
+                  max={32}
+                  step={1}
+                  onValueChange={([v]) => set("radius", v)}
+                />
               </Field>
-              <Field label={`Spacing · ${spacing}px`}>
-                <Slider value={[spacing]} max={48} step={2} onValueChange={([v]) => setSpacing(v)} />
+              <Field label={`Spacing · ${draft.spacing}px`}>
+                <Slider
+                  value={[draft.spacing]}
+                  max={48}
+                  step={2}
+                  onValueChange={([v]) => set("spacing", v)}
+                />
               </Field>
               <Field label="Font">
-                <Select value={font} onValueChange={setFont}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={draft.font} onValueChange={(v) => set("font", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Geist">Geist</SelectItem>
                     <SelectItem value="Instrument Serif">Instrument Serif</SelectItem>
@@ -99,8 +151,10 @@ function WidgetCustomizer() {
                 </Select>
               </Field>
               <Field label="Aspect ratio">
-                <Select defaultValue="9:16">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={draft.aspectRatio} onValueChange={(v) => set("aspectRatio", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="9:16">9:16 · Portrait</SelectItem>
                     <SelectItem value="1:1">1:1 · Square</SelectItem>
@@ -112,13 +166,27 @@ function WidgetCustomizer() {
             </TabsContent>
 
             <TabsContent value="behavior" className="mt-4 space-y-4">
-              <Row label="Autoplay" checked={autoplay} onChange={setAutoplay} />
-              <Row label="Loop" checked={loop} onChange={setLoop} />
-              <Row label="Muted by default" checked={muted} onChange={setMuted} />
-              <Row label="Show native controls" checked={controls} onChange={setControls} />
+              <Row
+                label="Autoplay"
+                checked={draft.autoplay}
+                onChange={(v) => set("autoplay", v)}
+              />
+              <Row label="Loop" checked={draft.loop} onChange={(v) => set("loop", v)} />
+              <Row
+                label="Muted by default"
+                checked={draft.muted}
+                onChange={(v) => set("muted", v)}
+              />
+              <Row
+                label="Show native controls"
+                checked={draft.controls}
+                onChange={(v) => set("controls", v)}
+              />
               <Field label="Animation">
-                <Select defaultValue="fade">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={draft.animation} onValueChange={(v) => set("animation", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     <SelectItem value="fade">Fade</SelectItem>
@@ -132,14 +200,19 @@ function WidgetCustomizer() {
             <TabsContent value="advanced" className="mt-4 space-y-4">
               <Field label="Custom CSS">
                 <textarea
-                  value={customCss}
-                  onChange={(e) => setCustomCss(e.target.value)}
+                  value={draft.customCss}
+                  onChange={(e) => set("customCss", e.target.value)}
                   className="h-36 w-full resize-none rounded-md border bg-background p-2 font-mono text-xs"
                   placeholder=".videofy-widget { ... }"
                 />
               </Field>
               <Field label="Placement selector">
-                <Input placeholder="#hero, .product-form" className="font-mono" />
+                <Input
+                  value={draft.placementSelector}
+                  onChange={(e) => set("placementSelector", e.target.value)}
+                  placeholder="#hero, .product-form"
+                  className="font-mono"
+                />
               </Field>
             </TabsContent>
           </Tabs>
@@ -174,25 +247,44 @@ function WidgetCustomizer() {
               style={{ width: previewW, maxWidth: "100%" }}
               className="rounded-lg bg-background p-6 shadow-2xl transition-all"
             >
-              <div style={{ fontFamily: font }} className="mb-4 flex items-baseline justify-between">
+              <div
+                style={{ fontFamily: draft.font }}
+                className="mb-4 flex items-baseline justify-between"
+              >
                 <div className="font-display text-2xl leading-none">Shop the reels</div>
                 <span className="text-xs text-muted-foreground">See all</span>
               </div>
-              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${device === "mobile" ? 2 : 4}, minmax(0, 1fr))`, gap: spacing }}>
-                {videos.slice(0, device === "mobile" ? 4 : 4).map((v) => (
-                  <div key={v.id} className="relative aspect-[9/16] overflow-hidden" style={{ borderRadius: radius, border: `2px solid ${accent}` }}>
-                    <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+              <div
+                className="grid gap-3"
+                style={{
+                  gridTemplateColumns: `repeat(${device === "mobile" ? 2 : 4}, minmax(0, 1fr))`,
+                  gap: draft.spacing,
+                }}
+              >
+                {videos.slice(0, 4).map((v) => (
+                  <div
+                    key={v.id}
+                    className="relative aspect-[9/16] overflow-hidden"
+                    style={{ borderRadius: draft.radius, border: `2px solid ${draft.accent}` }}
+                  >
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={v.thumbnail}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                       <div className="line-clamp-1 text-[10px] font-medium text-white">{v.title}</div>
                     </div>
                     <div
                       className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full"
-                      style={{ background: accent }}
+                      style={{ background: draft.accent }}
                     />
                   </div>
                 ))}
               </div>
-              <style>{customCss}</style>
+              <style>{draft.customCss}</style>
             </div>
           </div>
         </div>
@@ -210,7 +302,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Row({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Row({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between rounded-md border bg-background px-3 py-2">
       <span className="text-sm">{label}</span>

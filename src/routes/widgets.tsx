@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import {
   Copy,
   MoreHorizontal,
+  Pencil,
   Plus,
   Sparkles,
   Trash2,
@@ -29,7 +29,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { fmt, widgets as widgetsSeed, type Widget, type WidgetType } from "@/lib/mock-data";
+import { fmt, type WidgetType } from "@/lib/mock-data";
+import { useWidgetsStore } from "@/stores/widgets-store";
 
 export const Route = createFileRoute("/widgets")({
   component: WidgetsPage,
@@ -49,22 +50,34 @@ const typeIcon: Record<WidgetType, React.ComponentType<{ className?: string }>> 
 };
 
 function WidgetsPage() {
-  const [items, setItems] = useState<Widget[]>(widgetsSeed);
+  const items = useWidgetsStore((s) => s.items);
+  const toggle = useWidgetsStore((s) => s.toggle);
+  const duplicate = useWidgetsStore((s) => s.duplicate);
+  const remove = useWidgetsStore((s) => s.remove);
+  const rename = useWidgetsStore((s) => s.rename);
 
-  const toggle = (id: string) => {
-    setItems((prev) => prev.map((w) => (w.id === id ? { ...w, enabled: !w.enabled } : w)));
+  const handleToggle = (id: string) => {
+    toggle(id);
     toast.success("Widget updated");
   };
 
-  const duplicate = (w: Widget) => {
-    const copy: Widget = { ...w, id: `wid_${Math.random().toString(36).slice(2, 8)}`, name: `${w.name} (copy)`, enabled: false };
-    setItems((prev) => [copy, ...prev]);
+  const handleDuplicate = (id: string) => {
+    duplicate(id);
     toast.success("Duplicated");
   };
 
-  const remove = (id: string) => {
-    setItems((prev) => prev.filter((w) => w.id !== id));
+  const handleRemove = (id: string) => {
+    remove(id);
     toast.success("Deleted");
+  };
+
+  const handleRename = (id: string, currentName: string) => {
+    if (typeof window === "undefined") return;
+    const next = window.prompt("Rename widget", currentName);
+    if (next && next.trim() && next.trim() !== currentName) {
+      rename(id, next.trim());
+      toast.success("Renamed");
+    }
   };
 
   return (
@@ -119,10 +132,13 @@ function WidgetsPage() {
                       <DropdownMenuItem asChild>
                         <Link to="/widgets/$id" params={{ id: w.id }}>Customize</Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => duplicate(w)}>
+                      <DropdownMenuItem onClick={() => handleRename(w.id, w.name)}>
+                        <Pencil className="mr-2 h-3.5 w-3.5" /> Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicate(w.id)}>
                         <Copy className="mr-2 h-3.5 w-3.5" /> Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => remove(w.id)}>
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleRemove(w.id)}>
                         <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -140,7 +156,7 @@ function WidgetsPage() {
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t pt-3">
                   <div className="flex items-center gap-2 text-xs">
-                    <Switch checked={w.enabled} onCheckedChange={() => toggle(w.id)} />
+                    <Switch checked={w.enabled} onCheckedChange={() => handleToggle(w.id)} />
                     <span className="text-muted-foreground">{w.enabled ? "Enabled" : "Disabled"}</span>
                   </div>
                   <Button size="sm" variant="ghost" className="h-7 text-xs" asChild>
