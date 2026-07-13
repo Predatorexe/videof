@@ -40,6 +40,7 @@ import { useCollectionsStore } from "@/stores/collections-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { WidgetRenderer } from "@/components/widget/widget-renderer";
 import { copyToClipboard } from "@/lib/clipboard";
+import { WidgetPlayer } from "@/components/widget/widget-player";
 
 export const Route = createFileRoute("/widgets/$id")({
   loader: ({ params }) => {
@@ -403,10 +404,8 @@ function LivePreviewLauncher({ widgetId, onClose }: { widgetId: string; onClose:
 
   if (!widget) return null;
 
-  // Lazy-inline import to avoid SSR issues
-  const Player = require("@/components/widget/widget-player").WidgetPlayer;
   return (
-    <Player
+    <WidgetPlayer
       widget={widget}
       settings={settings}
       videos={chosenVideos}
