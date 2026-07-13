@@ -17,6 +17,7 @@ import { computeUsage, useBillingStore } from "@/stores/billing-store";
 import { useNotificationsStore } from "@/stores/notifications-store";
 import { useProfileStore } from "@/stores/profile-store";
 import { useUiStore } from "@/stores/ui-store";
+import { useWidgetsStore } from "@/stores/widgets-store";
 
 const labels: Record<string, string> = {
   "": "Overview",
@@ -38,6 +39,10 @@ export function AppHeader() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const parts = pathname.split("/").filter(Boolean);
   const currentLabel = parts.length === 0 ? "Overview" : labels[parts[0]] ?? parts[0];
+  const widgetName = useWidgetsStore((s) =>
+    parts[0] === "widgets" && parts[1] ? s.items.find((w) => w.id === parts[1])?.name : undefined,
+  );
+  const isWidgetChild = parts[0] === "widgets" && parts.length > 1;
 
   const items = useNotificationsStore((s) => s.items);
   const markRead = useNotificationsStore((s) => s.markRead);
