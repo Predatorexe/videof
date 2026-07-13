@@ -76,37 +76,53 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Workspace</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel className="text-[10px] font-medium tracking-[0.2em]">Workspace</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {main.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {main.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      className="group/mi h-9 rounded-lg text-[13px] font-medium text-sidebar-foreground/85 transition-colors hover:bg-white/[0.04] hover:text-white data-[active=true]:bg-signal/10 data-[active=true]:text-white data-[active=true]:shadow-[inset_0_0_0_1px_rgba(160,242,0,0.25),0_0_24px_-8px_rgba(160,242,0,0.5)]"
+                    >
+                      <Link to={item.url} className="flex items-center gap-2.5">
+                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-signal" : "text-sidebar-foreground/60 group-hover/mi:text-white"}`} />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Account</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel className="text-[10px] font-medium tracking-[0.2em]">Account</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {account.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {account.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      className="group/mi h-9 rounded-lg text-[13px] font-medium text-sidebar-foreground/85 transition-colors hover:bg-white/[0.04] hover:text-white data-[active=true]:bg-signal/10 data-[active=true]:text-white data-[active=true]:shadow-[inset_0_0_0_1px_rgba(160,242,0,0.25),0_0_24px_-8px_rgba(160,242,0,0.5)]"
+                    >
+                      <Link to={item.url} className="flex items-center gap-2.5">
+                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-signal" : "text-sidebar-foreground/60 group-hover/mi:text-white"}`} />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
