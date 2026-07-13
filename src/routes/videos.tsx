@@ -222,7 +222,7 @@ function VideosPage() {
                       className="flex items-center gap-3 text-left"
                     >
                       <div className="h-9 w-14 shrink-0 overflow-hidden rounded bg-muted">
-                        <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+                        <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
                       </div>
                       <span className="min-w-0">
                         <span className="block truncate font-medium">{v.title}</span>
@@ -271,7 +271,7 @@ function VideosPage() {
               </SheetHeader>
               <div className="mt-4 space-y-4">
                 <div className="relative aspect-[9/16] max-h-[420px] overflow-hidden rounded-lg bg-muted">
-                  <img src={preview.thumbnail} alt="" className="h-full w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={preview.thumbnail} alt="" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 grid place-items-center bg-black/30">
                     <Play className="h-10 w-10 text-white" />
                   </div>

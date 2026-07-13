@@ -1,29 +1,42 @@
+import { lazy, Suspense, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { Download, FileSpreadsheet } from "lucide-react";
 
 import { PageShell, Stat } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { fmt, revenueTrend, topVideos, topWidgets, viewsTrend } from "@/lib/mock-data";
+
+const ViewsAreaChart = lazy(() => import("@/components/charts/views-area-chart"));
+const RevenueBarChart = lazy(() => import("@/components/charts/revenue-bar-chart"));
+const WatchTimeLineChart = lazy(() => import("@/components/charts/watchtime-line-chart"));
 
 export const Route = createFileRoute("/analytics")({
   component: AnalyticsPage,
+  pendingComponent: AnalyticsPending,
 });
 
+function AnalyticsPending() {
+  return (
+    <PageShell eyebrow="Reports" title="Loading analytics…" description="Crunching your numbers.">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <ChartSkeleton key={i} className="h-24" />
+        ))}
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <ChartSkeleton className="h-56" />
+        <ChartSkeleton className="h-56" />
+      </div>
+    </PageShell>
+  );
+}
+
 function AnalyticsPage() {
+  const rankedVideos = useMemo(() => topVideos.slice(0, 8), []);
+  const rankedWidgets = useMemo(() => topWidgets.slice(0, 10), []);
+
   return (
     <PageShell
       eyebrow="Reports"
@@ -58,46 +71,21 @@ function AnalyticsPage() {
 
       <section className="grid gap-3 lg:grid-cols-2">
         <ChartCard title="Views vs clicks">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={viewsTrend} margin={{ left: -20, right: 8 }}>
-              <defs>
-                <linearGradient id="viewsG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--signal)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="var(--signal)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Area type="monotone" dataKey="views" stroke="var(--signal)" strokeWidth={2} fill="url(#viewsG)" />
-              <Area type="monotone" dataKey="clicks" stroke="var(--ember)" strokeWidth={2} fill="transparent" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Suspense fallback={<ChartSkeleton className="h-56" />}>
+            <ViewsAreaChart data={viewsTrend} showClicks />
+          </Suspense>
         </ChartCard>
 
         <ChartCard title="Revenue">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={revenueTrend} margin={{ left: -20, right: 8 }}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="revenue" fill="var(--signal)" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Suspense fallback={<ChartSkeleton className="h-56" />}>
+            <RevenueBarChart data={revenueTrend} showRefunds={false} />
+          </Suspense>
         </ChartCard>
 
         <ChartCard title="Watch time (min)">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={viewsTrend} margin={{ left: -20, right: 8 }}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="views" stroke="var(--chart-3)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <Suspense fallback={<ChartSkeleton className="h-56" />}>
+            <WatchTimeLineChart data={viewsTrend} />
+          </Suspense>
         </ChartCard>
 
         <div className="rounded-xl border bg-card">
@@ -105,7 +93,7 @@ function AnalyticsPage() {
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Top videos</div>
           </div>
           <ul className="divide-y">
-            {topVideos.map((v, i) => (
+            {rankedVideos.map((v, i) => (
               <li key={v.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 p-3">
                 <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
                 <span className="truncate text-sm">{v.title}</span>
@@ -131,7 +119,7 @@ function AnalyticsPage() {
             </tr>
           </thead>
           <tbody>
-            {topWidgets.map((w) => (
+            {rankedWidgets.map((w) => (
               <tr key={w.id} className="border-t">
                 <td className="px-4 py-2 font-medium">{w.name}</td>
                 <td className="px-4 py-2 text-muted-foreground">{w.placement}</td>
@@ -146,13 +134,6 @@ function AnalyticsPage() {
     </PageShell>
   );
 }
-
-const tooltipStyle = {
-  background: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: 8,
-  fontSize: 12,
-};
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
