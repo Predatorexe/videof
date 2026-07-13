@@ -60,7 +60,16 @@ export function AppHeader() {
   const pct = Math.min(100, Math.round(usage.pct));
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.05] bg-background/85 px-5 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.05] bg-background/85 px-3 backdrop-blur-md sm:px-5">
+      {/* Mobile menu */}
+      <button
+        type="button"
+        onClick={() => openMobileSidebar(true)}
+        aria-label="Open navigation"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-[3px] border border-white/[0.06] text-white/70 transition-colors hover:border-white/20 hover:text-white md:hidden"
+      >
+        <Menu className="h-4 w-4" strokeWidth={1.5} />
+      </button>
       {/* Breadcrumb */}
       <div className="flex min-w-0 items-center gap-3">
         <span className="eyebrow hidden sm:block">System · v3</span>
