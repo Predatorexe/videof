@@ -1,9 +1,8 @@
 import { lazy, Suspense, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ArrowUpRight, Film, Play, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Film, Play, Sparkles, TrendingUp, Radio } from "lucide-react";
 
-import { PageShell, Stat } from "@/components/page-shell";
-import { Badge } from "@/components/ui/badge";
+import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { fmt, revenueTrend, trafficSources, viewsTrend } from "@/lib/mock-data";
@@ -14,15 +13,12 @@ import { useProfileStore } from "@/stores/profile-store";
 import { useUiStore } from "@/stores/ui-store";
 
 const ViewsAreaChart = lazy(() => import("@/components/charts/views-area-chart"));
-const TrafficDonut = lazy(() => import("@/components/charts/traffic-donut"));
 const RevenueBarChart = lazy(() => import("@/components/charts/revenue-bar-chart"));
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
   pendingComponent: DashboardPending,
 });
-
-const donutColors = ["var(--signal)", "var(--ember)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
 function DashboardPending() {
   return (
@@ -61,128 +57,114 @@ function Dashboard() {
     [widgets],
   );
 
+  const viewsTotal = useMemo(() => viewsTrend.reduce((s, x) => s + x.views, 0), []);
+
   return (
     <PageShell
-      eyebrow="Overview · This week"
+      eyebrow="Control room · This week"
       title={`Good to see you, ${profile.firstName}.`}
-      description={`Your storefront reels earned ${fmt.compact(totals.views)} views and ${fmt.money(
-        totals.revenue,
-      )} in attributed revenue this cycle.`}
+      description={`${fmt.compact(totals.views)} views · ${fmt.money(totals.revenue)} attributed · ${totals.activeWidgets} widgets live across your storefront.`}
       actions={
         <>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="h-9 rounded-[3px] px-3 text-xs" asChild>
             <Link to="/analytics">
               Reports
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
             </Link>
           </Button>
-          <Button size="sm" onClick={() => openUpload(true)}>
+          <Button size="sm" onClick={() => openUpload(true)} className="h-9 rounded-[3px] px-3 text-xs">
             New upload
             <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
           </Button>
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat accent="signal" label="Total videos" value={fmt.n(videos.length)} hint={`${videos.filter((v) => v.status === "published").length} published`} />
-        <Stat label="Active widgets" value={fmt.n(totals.activeWidgets)} hint={`${widgets.length} total`} />
-        <Stat label="Views" value={fmt.compact(totals.views)} hint={`${fmt.compact(totals.clicks)} clicks`} />
-        <Stat accent="ember" label="Attributed revenue" value={fmt.money(totals.revenue)} hint="+22% vs last week" />
-      </div>
-
-      <section className="grid gap-3 lg:grid-cols-[2fr_1fr]">
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Views · Last 28 days
-              </div>
-              <div className="font-display mt-1 text-3xl">{fmt.n(viewsTrend.reduce((s, x) => s + x.views, 0))}</div>
+      {/* Hero metric row — one editorial number + supporting stats */}
+      <section className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+        <div className="term-card p-6 md:p-8">
+          <div className="flex items-center justify-between">
+            <div className="eyebrow-lg">Net gross revenue</div>
+            <div className="flex items-center gap-2">
+              <span className="live-dot" aria-hidden />
+              <span className="eyebrow text-signal">Live</span>
             </div>
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <TrendingUp className="h-3 w-3" /> +12.4%
-            </Badge>
           </div>
-          <div className="mt-4 h-64">
-            <Suspense fallback={<ChartSkeleton className="h-64" />}>
+          <div className="mt-4 flex items-baseline gap-3">
+            <h2 className="hero-serif hero-enter text-6xl md:text-7xl lg:text-[92px]">
+              {fmt.money(totals.revenue).replace("$", "$")}
+            </h2>
+            <span className="chip text-signal border-signal/30">
+              <TrendingUp className="h-3 w-3" /> +22.4%
+            </span>
+          </div>
+          <div className="mt-6 h-40">
+            <Suspense fallback={<ChartSkeleton className="h-40" />}>
               <ViewsAreaChart data={viewsTrend} />
             </Suspense>
           </div>
+          <div className="mt-2 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-white/30">
+            <span>28 DAYS</span>
+            <span>{fmt.n(viewsTotal)} VIEWS</span>
+          </div>
         </div>
 
-        <div className="rounded-xl border bg-card p-5">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Traffic sources</div>
-          <div className="mt-2 grid grid-cols-[1fr_1fr] items-center gap-4">
-            <div className="h-40">
-              <Suspense fallback={<ChartSkeleton className="h-40" />}>
-                <TrafficDonut data={trafficSources} colors={donutColors} />
-              </Suspense>
-            </div>
-            <ul className="space-y-1.5 text-xs">
-              {trafficSources.map((s, i) => (
-                <li key={s.name} className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ background: donutColors[i] }} />
-                    {s.name}
-                  </span>
-                  <span className="font-mono text-muted-foreground">{s.value}%</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="grid gap-3">
+          <MetricTile
+            live
+            label="Active widgets"
+            value={fmt.n(totals.activeWidgets)}
+            spark={[3, 5, 4, 6, 5, 7, 8]}
+            hint={`${widgets.length} total`}
+          />
+          <MetricTile
+            label="Views"
+            value={fmt.compact(totals.views)}
+            spark={[2, 3, 3, 4, 5, 6, 7]}
+            hint={`${fmt.compact(totals.clicks)} clicks`}
+          />
+          <MetricTile
+            label="Videos"
+            value={fmt.n(videos.length)}
+            spark={[4, 4, 5, 5, 6, 6, 7]}
+            hint={`${videos.filter((v) => v.status === "published").length} published`}
+          />
         </div>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Revenue by month</div>
-            <Badge variant="outline" className="text-[10px]">USD</Badge>
+      {/* Engagement flow + Traffic composition */}
+      <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <div className="term-card p-6">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="eyebrow-lg">Engagement flow</div>
+              <div className="mt-3 hero-serif text-3xl">Live traffic across surfaces</div>
+            </div>
+            <span className="chip font-mono tracking-widest">L-04 / NODE_A</span>
           </div>
-          <div className="h-56">
+          <div className="mt-4 h-56">
             <Suspense fallback={<ChartSkeleton className="h-56" />}>
               <RevenueBarChart data={revenueTrend} />
             </Suspense>
           </div>
         </div>
 
-        <div className="rounded-xl border bg-card">
-          <div className="flex items-center justify-between border-b p-5">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Top performing videos</div>
-              <div className="font-display mt-1 text-2xl">This week</div>
-            </div>
-            <Button size="sm" variant="ghost" asChild>
-              <Link to="/videos">All videos</Link>
-            </Button>
+        <div className="term-card p-6">
+          <div className="flex items-center justify-between">
+            <div className="eyebrow-lg">Traffic composition</div>
+            <Radio className="h-3.5 w-3.5 text-white/30" />
           </div>
-          <ul className="divide-y">
-            {rankedVideos.length === 0 && (
-              <li className="p-6 text-center text-sm text-muted-foreground">No videos yet — upload one to get started.</li>
-            )}
-            {rankedVideos.map((v, i) => (
-              <li key={v.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 p-4">
-                <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
-                  <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 grid place-items-center bg-black/30 opacity-0 transition group-hover:opacity-100">
-                    <Play className="h-4 w-4 text-white" />
-                  </div>
+          <ul className="mt-5 space-y-3">
+            {trafficSources.map((s) => (
+              <li key={s.name}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/70">{s.name}</span>
+                  <span className="font-mono tabular-nums text-white/90">{s.value}%</span>
                 </div>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{v.title}</div>
-                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="font-mono">#{i + 1}</span>
-                    <span>·</span>
-                    <span>{v.duration}</span>
-                    <span>·</span>
-                    <span>{fmt.compact(v.views)} views</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-sm">
-                    {v.views > 0 ? fmt.pct((v.clicks / v.views) * 100) : "—"}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">CTR</div>
+                <div className="mt-1.5 h-[3px] w-full overflow-hidden rounded-full bg-white/[0.04]">
+                  <div
+                    className="h-full rounded-full bg-signal"
+                    style={{ width: `${s.value}%`, opacity: 0.35 + s.value / 100 }}
+                  />
                 </div>
               </li>
             ))}
@@ -190,67 +172,215 @@ function Dashboard() {
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <ActivityCard entries={activity.slice(0, 6)} />
-        <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Widget leaderboard</div>
-            <Sparkles className="h-4 w-4 text-signal" />
+      {/* Top videos + Widget leaderboard */}
+      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="term-card">
+          <div className="flex items-center justify-between border-b border-white/[0.05] px-6 py-4">
+            <div>
+              <div className="eyebrow-lg">Top performing videos</div>
+              <div className="mt-2 hero-serif text-2xl">This week</div>
+            </div>
+            <Button size="sm" variant="ghost" className="h-8 rounded-[3px] text-[11px] uppercase tracking-wider" asChild>
+              <Link to="/videos">All videos</Link>
+            </Button>
           </div>
-          <ul className="mt-3 space-y-2 text-sm">
-            {rankedWidgets.length === 0 && (
-              <li className="text-xs text-muted-foreground">No widgets yet.</li>
+          <ul>
+            {rankedVideos.length === 0 && (
+              <li className="p-8 text-center text-sm text-white/40">
+                No videos yet — upload one to get started.
+              </li>
             )}
-            {rankedWidgets.map((w, i) => (
-              <li key={w.id} className="flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                  <span className="truncate">{w.name}</span>
-                </span>
-                <span className="font-mono text-xs">{fmt.pct(w.ctr)}</span>
+            {rankedVideos.map((v, i) => (
+              <li
+                key={v.id}
+                className="group grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-white/[0.04] px-6 py-3 last:border-b-0 hover:bg-white/[0.02]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-[10px] text-white/30 tabular-nums w-6">
+                    0{i + 1}
+                  </span>
+                  <div className="relative h-11 w-16 shrink-0 overflow-hidden rounded-[3px] bg-white/[0.04]">
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={v.thumbnail}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                      <Play className="h-3.5 w-3.5 text-white" fill="currentColor" />
+                    </div>
+                    <div className="absolute bottom-0.5 right-0.5 rounded-[2px] bg-black/70 px-1 py-0.5 font-mono text-[8px] text-white/80">
+                      {v.duration}
+                    </div>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-medium text-white">{v.title}</div>
+                  <div className="mt-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-white/40">
+                    <span>{fmt.compact(v.views)} views</span>
+                    <span>·</span>
+                    <span>{fmt.compact(v.clicks)} clicks</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-xs tabular-nums text-signal">
+                    {v.views > 0 ? fmt.pct((v.clicks / v.views) * 100) : "—"}
+                  </div>
+                  <div className="eyebrow mt-1">CTR</div>
+                </div>
               </li>
             ))}
           </ul>
         </div>
-        <div className="relative overflow-hidden rounded-xl border bg-primary p-5 text-primary-foreground grain">
-          <div className="text-[10px] uppercase tracking-[0.18em] opacity-70">Signal</div>
-          <div className="font-display mt-2 text-2xl leading-tight">
-            Your Story widget just outperformed the site average by 3.4×.
+
+        <div className="term-card p-6">
+          <div className="flex items-center justify-between">
+            <div className="eyebrow-lg">Widget leaderboard</div>
+            <Sparkles className="h-3.5 w-3.5 text-signal" />
           </div>
-          <Button size="sm" variant="secondary" className="mt-4" asChild>
-            <Link to="/widgets">See widgets</Link>
-          </Button>
+          <ul className="mt-5 space-y-4">
+            {rankedWidgets.length === 0 && (
+              <li className="text-xs text-white/40">No widgets yet.</li>
+            )}
+            {rankedWidgets.map((w, i) => {
+              const pct = Math.min(100, w.ctr * 8);
+              return (
+                <li key={w.id}>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="font-mono text-[10px] tabular-nums text-white/30">
+                        0{i + 1}
+                      </span>
+                      <span className="truncate text-white/80">{w.name}</span>
+                    </span>
+                    <span className="font-mono tabular-nums text-white/90">
+                      {fmt.pct(w.ctr)}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-[2px] w-full overflow-hidden rounded-full bg-white/[0.04]">
+                    <div
+                      className="h-full rounded-full bg-signal transition-[width] duration-500"
+                      style={{ width: `${pct}%`, opacity: 0.4 + i * 0.1 }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      {/* Operation log */}
+      <section className="term-card p-6">
+        <div className="flex items-end justify-between border-b border-white/[0.08] pb-3">
+          <div>
+            <div className="eyebrow-lg">Operation log</div>
+            <div className="mt-2 hero-serif text-2xl">Recent activity</div>
+          </div>
+          <Link
+            to="/notifications"
+            className="text-[10px] uppercase tracking-widest text-signal hover:underline"
+          >
+            View all
+          </Link>
+        </div>
+        <div className="mt-2">
+          {activity.length === 0 && (
+            <div className="py-6 text-center text-xs text-white/40">No activity yet.</div>
+          )}
+          {activity.slice(0, 8).map((e) => (
+            <div key={e.id} className="op-row">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-white/30">
+                {shortTime(e.at)}
+              </span>
+              <span className="min-w-0 truncate">
+                <span className="font-medium text-white/90">{e.title}</span>
+                {e.detail && <span className="text-white/40"> · {e.detail}</span>}
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">
+                {e.kind}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Signal callout */}
+      <section className="term-card-live p-6 md:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="min-w-0 max-w-xl">
+            <div className="eyebrow-lg text-signal">Signal detected</div>
+            <div className="mt-3 hero-serif text-3xl md:text-4xl leading-[1.05]">
+              Your Story widget just outperformed the site average by
+              <span className="text-signal"> 3.4×</span>.
+            </div>
+            <p className="mt-3 text-xs text-white/50">
+              Consider promoting it site-wide or duplicating the composition to your homepage carousel.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="h-9 rounded-[3px] px-3 text-xs" asChild>
+              <Link to="/widgets">
+                <Film className="mr-1.5 h-3.5 w-3.5" />
+                Inspect
+              </Link>
+            </Button>
+            <Button size="sm" className="h-9 rounded-[3px] px-3 text-xs" asChild>
+              <Link to="/widgets">
+                Promote
+                <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
     </PageShell>
   );
 }
 
-function ActivityCard({ entries }: { entries: { id: string; kind: string; title: string; detail?: string; at: string }[] }) {
+/* ------------------------------------------------------------------ */
+
+function MetricTile({
+  label,
+  value,
+  hint,
+  spark,
+  live,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  spark: number[];
+  live?: boolean;
+}) {
+  const max = Math.max(...spark) || 1;
   return (
-    <div className="rounded-xl border bg-card p-5">
-      <div className="flex items-center justify-between">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Recent activity</div>
-        <span className="grid h-6 w-6 place-items-center rounded-md bg-muted text-muted-foreground">
-          <Film className="h-4 w-4" />
-        </span>
+    <div className={`${live ? "term-card-live" : "term-card-muted"} card-hover flex items-center gap-4 p-5`}>
+      <div className="flex-1 min-w-0">
+        <div className="eyebrow">{label}</div>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="hero-serif text-3xl">{value}</span>
+        </div>
+        {hint && <div className="mt-2 text-[10px] font-mono uppercase tracking-wider text-white/40">{hint}</div>}
       </div>
-      <ul className="mt-3 space-y-2 text-sm">
-        {entries.length === 0 && (
-          <li className="text-xs text-muted-foreground">No activity yet.</li>
-        )}
-        {entries.map((e) => (
-          <li key={e.id} className="flex items-center justify-between border-b pb-2 last:border-b-0 last:pb-0">
-            <span className="min-w-0 truncate">
-              <span className="font-medium">{e.title}</span>
-              {e.detail && <span className="text-muted-foreground"> · {e.detail}</span>}
-            </span>
-            <span className="font-mono text-[11px] text-muted-foreground">
-              {fmt.date(e.at)}
-            </span>
-          </li>
+      <div className="flex h-10 items-end gap-[3px]">
+        {spark.map((v, i) => (
+          <span
+            key={i}
+            className={live ? "w-[3px] bg-signal" : "w-[3px] bg-white/25"}
+            style={{ height: `${(v / max) * 100}%`, opacity: 0.35 + (i / spark.length) * 0.65 }}
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
+}
+
+function shortTime(iso: string) {
+  const d = new Date(iso);
+  const hh = d.getUTCHours().toString().padStart(2, "0");
+  const mm = d.getUTCMinutes().toString().padStart(2, "0");
+  const ss = d.getUTCSeconds().toString().padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
 }

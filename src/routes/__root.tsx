@@ -10,7 +10,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
@@ -27,9 +26,9 @@ import { useUiStore } from "@/stores/ui-store";
 function NotFoundComponent() {
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="font-display text-[7rem] leading-none">404</div>
-      <h1 className="text-xl font-semibold">This page is off-camera</h1>
-      <p className="text-sm text-muted-foreground">
+      <div className="hero-serif text-[7rem] leading-none">404</div>
+      <h1 className="text-xl font-medium">This page is off-camera</h1>
+      <p className="text-sm text-white/50">
         The screen you're looking for doesn't exist, moved, or is still in post-production.
       </p>
       <Button asChild>
@@ -47,8 +46,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
-      <h1 className="font-display text-3xl">Something dropped a frame</h1>
-      <p className="text-sm text-muted-foreground">
+      <h1 className="hero-serif text-4xl">Something dropped a frame</h1>
+      <p className="text-sm text-white/50">
         We logged the error. Try again or head back to the dashboard.
       </p>
       <div className="flex gap-2">
@@ -73,22 +72,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Videofy — Shoppable video platform" },
+      { title: "Videofy — Video Commerce Operating System" },
       {
         name: "description",
         content:
-          "Videofy is the shoppable video platform for modern commerce brands. Upload, tag, and publish reels, stories, and carousels to any storefront.",
+          "Videofy is the video commerce operating system for modern brands. Upload, tag, and publish shoppable reels to any storefront — a studio control room for your entire catalog.",
       },
-      { property: "og:title", content: "Videofy — Shoppable video platform" },
+      { property: "og:title", content: "Videofy — Video Commerce Operating System" },
       {
         property: "og:description",
         content:
-          "Videofy is the shoppable video platform for modern commerce brands. Upload, tag, and publish reels, stories, and carousels to any storefront.",
+          "The video commerce operating system for modern brands. Upload, tag, and publish shoppable reels to any storefront.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Videofy — Shoppable video platform" },
-      { name: "twitter:description", content: "Videofy is the shoppable video platform for modern commerce brands. Upload, tag, and publish reels, stories, and carousels to any storefront." },
+      { name: "twitter:title", content: "Videofy — Video Commerce Operating System" },
+      { name: "twitter:description", content: "The video commerce operating system for modern brands." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ec96e621-0871-4504-ab3c-1c7d5f1e8385/id-preview-74024509--7feba8cc-051c-4099-a617-251ef709612c.lovable.app-1783976339809.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ec96e621-0871-4504-ab3c-1c7d5f1e8385/id-preview-74024509--7feba8cc-051c-4099-a617-251ef709612c.lovable.app-1783976339809.png" },
     ],
@@ -99,7 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap",
       },
     ],
   }),
@@ -150,27 +149,25 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background text-foreground">
-          <AppSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <AppHeader />
-            <main className="min-w-0 flex-1">
-              <Outlet />
-            </main>
-          </div>
+      <div className="flex min-h-screen w-full bg-background text-foreground">
+        <AppSidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AppHeader />
+          <main className="min-w-0 flex-1">
+            <Outlet />
+          </main>
         </div>
-        <Toaster />
-        <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
-        <UploadVideoDialog />
-        <CreateWidgetDialog open={createWidgetOpen} onOpenChange={setCreateWidgetOpen} />
-        <CreateProductDialog open={createProductOpen} onOpenChange={setCreateProductOpen} />
-        <CreateCollectionDialog
-          open={createCollectionOpen}
-          onOpenChange={setCreateCollectionOpen}
-        />
-        <UpdateCardDialog open={updateCardOpen} onOpenChange={setUpdateCardOpen} />
-      </SidebarProvider>
+      </div>
+      <Toaster />
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+      <UploadVideoDialog />
+      <CreateWidgetDialog open={createWidgetOpen} onOpenChange={setCreateWidgetOpen} />
+      <CreateProductDialog open={createProductOpen} onOpenChange={setCreateProductOpen} />
+      <CreateCollectionDialog
+        open={createCollectionOpen}
+        onOpenChange={setCreateCollectionOpen}
+      />
+      <UpdateCardDialog open={updateCardOpen} onOpenChange={setUpdateCardOpen} />
     </QueryClientProvider>
   );
 }
