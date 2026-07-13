@@ -20,7 +20,7 @@ import type { ComponentType, SVGProps } from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProfileStore } from "@/stores/profile-store";
-import { useUIStore } from "@/stores/ui-store";
+import { useUiStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
 
 type Item = { title: string; url: string; icon: ComponentType<SVGProps<SVGSVGElement>> };
