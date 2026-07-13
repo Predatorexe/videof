@@ -52,11 +52,11 @@ export function Stat({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border bg-card p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-[3px] ${accentClass}`}
+      className={`card-hover group relative overflow-hidden rounded-xl border bg-card p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-[3px] ${accentClass}`}
     >
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-      <div className="font-display mt-2 text-3xl leading-none md:text-4xl">{value}</div>
-      {hint && <div className="mt-2 text-xs text-muted-foreground">{hint}</div>}
+      <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+      <div className="font-display mt-3 text-3xl leading-none tracking-tight md:text-4xl">{value}</div>
+      {hint && <div className="mt-3 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
 }
