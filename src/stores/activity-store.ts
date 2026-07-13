@@ -26,10 +26,12 @@ type State = {
   clear: () => void;
 };
 
+const SEED_EPOCH = Date.UTC(2026, 6, 13);
+
 export const useActivityStore = create<State>((set) => ({
   entries: [
-    { id: newId("act"), kind: "auth", title: "Signed in", detail: "Chrome · macOS", at: new Date(Date.now() - 3600_000).toISOString() },
-    { id: newId("act"), kind: "publish", title: "Widget published", detail: "Homepage Reel Carousel", at: new Date(Date.now() - 7200_000).toISOString() },
+    { id: newId("act"), kind: "auth", title: "Signed in", detail: "Chrome · macOS", at: new Date(SEED_EPOCH - 3600_000).toISOString() },
+    { id: newId("act"), kind: "publish", title: "Widget published", detail: "Homepage Reel Carousel", at: new Date(SEED_EPOCH - 7200_000).toISOString() },
   ],
   log: (kind, title, detail) =>
     set((s) => ({
