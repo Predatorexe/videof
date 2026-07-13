@@ -23,6 +23,7 @@ import { Route as BillingRouteImport } from './routes/billing'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WidgetsIdRouteImport } from './routes/widgets.$id'
+import { Route as WidgetPreviewIdRouteImport } from './routes/widget-preview.$id'
 
 const WidgetsRoute = WidgetsRouteImport.update({
   id: '/widgets',
@@ -94,6 +95,11 @@ const WidgetsIdRoute = WidgetsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => WidgetsRoute,
 } as any)
+const WidgetPreviewIdRoute = WidgetPreviewIdRouteImport.update({
+  id: '/widget-preview/$id',
+  path: '/widget-preview/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/videos': typeof VideosRoute
   '/widgets': typeof WidgetsRouteWithChildren
+  '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/videos': typeof VideosRoute
   '/widgets': typeof WidgetsRouteWithChildren
+  '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/videos': typeof VideosRoute
   '/widgets': typeof WidgetsRouteWithChildren
+  '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/videos'
     | '/widgets'
+    | '/widget-preview/$id'
     | '/widgets/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/videos'
     | '/widgets'
+    | '/widget-preview/$id'
     | '/widgets/$id'
   id:
     | '__root__'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/videos'
     | '/widgets'
+    | '/widget-preview/$id'
     | '/widgets/$id'
   fileRoutesById: FileRoutesById
 }
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   VideosRoute: typeof VideosRoute
   WidgetsRoute: typeof WidgetsRouteWithChildren
+  WidgetPreviewIdRoute: typeof WidgetPreviewIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WidgetsIdRouteImport
       parentRoute: typeof WidgetsRoute
     }
+    '/widget-preview/$id': {
+      id: '/widget-preview/$id'
+      path: '/widget-preview/$id'
+      fullPath: '/widget-preview/$id'
+      preLoaderRoute: typeof WidgetPreviewIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   VideosRoute: VideosRoute,
   WidgetsRoute: WidgetsRouteWithChildren,
+  WidgetPreviewIdRoute: WidgetPreviewIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
