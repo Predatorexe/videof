@@ -210,6 +210,11 @@
 
 @utility hairline { border: 1px solid var(--color-border); }
 
+@utility tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
 @utility glass-card {
   position: relative;
   background:
