@@ -246,7 +246,7 @@ function ActivityCard({ entries }: { entries: { id: string; kind: string; title:
               {e.detail && <span className="text-muted-foreground"> · {e.detail}</span>}
             </span>
             <span className="font-mono text-[11px] text-muted-foreground">
-              {new Date(e.at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+              {fmt.date(e.at)}
             </span>
           </li>
         ))}
