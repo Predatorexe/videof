@@ -65,6 +65,8 @@ const typeIcon: Record<WidgetType, React.ComponentType<{ className?: string }>> 
 
 function WidgetsPage() {
   const items = useWidgetsStore((s) => s.items);
+  const settingsMap = useWidgetsStore((s) => s.settings);
+  const videos = useVideosStore((s) => s.items);
   const toggle = useWidgetsStore((s) => s.toggle);
   const duplicate = useWidgetsStore((s) => s.duplicate);
   const remove = useWidgetsStore((s) => s.remove);
