@@ -126,10 +126,28 @@ function WidgetsPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((w) => {
             const Icon = typeIcon[w.type];
+            const ws = settingsMap[w.id];
+            const firstVideoId = ws?.videoIds?.[0];
+            const thumb = firstVideoId
+              ? videos.find((v) => v.id === firstVideoId)?.thumbnail
+              : videos[0]?.thumbnail;
             return (
               <div key={w.id} className="group relative overflow-hidden rounded-xl border bg-card">
                 <div className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-gradient-to-br from-muted to-elevated">
-                  <Icon className="h-16 w-16 text-muted-foreground/40" />
+                  {thumb ? (
+                    <>
+                      <img
+                        src={thumb}
+                        alt=""
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                      <Icon className="relative h-10 w-10 text-white/80 drop-shadow-lg" />
+                    </>
+                  ) : (
+                    <Icon className="h-16 w-16 text-muted-foreground/40" />
+                  )}
                   <div className="absolute left-3 top-3">
                     <Badge variant="secondary" className="capitalize">
                       {w.type}
