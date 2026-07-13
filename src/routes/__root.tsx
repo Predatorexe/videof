@@ -76,10 +76,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "Upload, tag, and publish shoppable video across your storefront. Reels, stories, carousels, and analytics in one dashboard.",
+          "Videofy is the shoppable video platform for modern commerce brands. Upload, tag, and publish reels, stories, and carousels to any storefront.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Videofy — Shoppable video platform" },
+      { name: "twitter:description", content: "Videofy is the shoppable video platform for modern commerce brands. Upload, tag, and publish reels, stories, and carousels to any storefront." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ec96e621-0871-4504-ab3c-1c7d5f1e8385/id-preview-74024509--7feba8cc-051c-4099-a617-251ef709612c.lovable.app-1783976339809.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ec96e621-0871-4504-ab3c-1c7d5f1e8385/id-preview-74024509--7feba8cc-051c-4099-a617-251ef709612c.lovable.app-1783976339809.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
