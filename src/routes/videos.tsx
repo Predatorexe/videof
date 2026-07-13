@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { fmt, videos, type Video } from "@/lib/mock-data";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export const Route = createFileRoute("/videos")({
   component: VideosPage,
@@ -382,7 +383,9 @@ function VideoActions({ v }: { v: Video }) {
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => toast(`Editing ${v.title}`)}>Rename</DropdownMenuItem>
         <DropdownMenuItem onClick={() => toast("Duplicated")}>Duplicate</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigator.clipboard?.writeText(v.id).then(() => toast("URL copied"))}>
+        <DropdownMenuItem
+          onClick={() => copyToClipboard(v.id, { successMessage: "URL copied" })}
+        >
           Copy URL
         </DropdownMenuItem>
         <DropdownMenuItem>Assign products</DropdownMenuItem>

@@ -7,139 +7,47 @@ import {
   Download,
   Gauge,
   Info,
-  Rocket,
-  Sparkles,
-  Star,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageShell, Stat } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { fmt, invoices } from "@/lib/mock-data";
+import {
+  OVERAGE_BLOCK,
+  OVERAGE_PRICE,
+  computeUsage,
+  plans,
+  useBillingStore,
+  type PlanId,
+  type Usage,
+} from "@/stores/billing-store";
 
 export const Route = createFileRoute("/billing")({
   component: BillingPage,
 });
 
-type PlanId = "free" | "starter" | "growth" | "scale";
-
-type Plan = {
-  id: PlanId;
-  name: string;
-  price: number;
-  impressions: number;
-  tagline: string;
-  Icon: typeof Sparkles;
-  features: string[];
-  cta?: string;
-};
-
-const plans: Plan[] = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    impressions: 2_000,
-    tagline: "For merchants exploring shoppable video.",
-    Icon: Sparkles,
-    features: [
-      "2,000 monthly impressions",
-      "Unlimited video uploads",
-      "Unlimited products",
-      "Homepage carousel, product & story widgets",
-      "Basic analytics",
-      "Community support",
-    ],
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    price: 15,
-    impressions: 5_000,
-    tagline: "Launch social-to-storefront in minutes.",
-    Icon: Zap,
-    features: [
-      "5,000 monthly impressions",
-      "Unlimited video uploads",
-      "Unlimited widgets",
-      "Instagram & TikTok import",
-      "Product matching",
-      "Advanced analytics",
-      "Email support",
-    ],
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    price: 25,
-    impressions: 20_000,
-    tagline: "Scale conversion across every surface.",
-    Icon: Rocket,
-    features: [
-      "20,000 monthly impressions",
-      "Unlimited videos & widgets",
-      "AI product matching",
-      "Priority support",
-      "Advanced analytics",
-      "Report export",
-      "Widget customization",
-    ],
-  },
-  {
-    id: "scale",
-    name: "Scale",
-    price: 60,
-    impressions: 60_000,
-    tagline: "Everything unlocked for high-volume brands.",
-    Icon: Star,
-    features: [
-      "60,000 monthly impressions",
-      "Unlimited everything",
-      "Team members",
-      "White label",
-      "API access",
-      "Premium analytics",
-      "Dedicated support",
-      "Custom branding",
-    ],
-  },
-];
-
-const OVERAGE_BLOCK = 10_000;
-const OVERAGE_PRICE = 5;
-
-// Mock live account state — swap for API when billing backend lands.
-const account = {
-  currentPlanId: "growth" as PlanId,
-  usedThisMonth: 24_820,
-  usedToday: 1_140,
-  usedYesterday: 980,
-  cycleStart: "2026-06-28T00:00:00.000Z",
-  cycleEnd: "2026-07-28T00:00:00.000Z",
-  paymentBrand: "Visa",
-  paymentLast4: "4242",
-};
-
-function computeUsage(planId: PlanId, used: number) {
-  const plan = plans.find((p) => p.id === planId)!;
-  const limit = plan.impressions;
-  const hardLimit = limit * 2;
-  const remaining = Math.max(limit - used, 0);
-  const overage = Math.max(used - limit, 0);
-  const billedBlocks = Math.floor(overage / OVERAGE_BLOCK);
-  const overageCharge = billedBlocks * OVERAGE_PRICE;
-  const pct = Math.min((used / limit) * 100, 200);
-  const paused = used >= hardLimit;
-  return { plan, limit, hardLimit, remaining, overage, billedBlocks, overageCharge, pct, paused };
-}
-
 function BillingPage() {
-  const usage = computeUsage(account.currentPlanId, account.usedThisMonth);
-  const renewal = fmt.date(account.cycleEnd);
+  const currentPlanId = useBillingStore((s) => s.currentPlanId);
+  const usedThisMonth = useBillingStore((s) => s.usedThisMonth);
+  const usedToday = useBillingStore((s) => s.usedToday);
+  const usedYesterday = useBillingStore((s) => s.usedYesterday);
+  const cycleEnd = useBillingStore((s) => s.cycleEnd);
+  const paymentBrand = useBillingStore((s) => s.paymentBrand);
+  const paymentLast4 = useBillingStore((s) => s.paymentLast4);
+  const autoRenew = useBillingStore((s) => s.autoRenew);
+  const setPlan = useBillingStore((s) => s.setPlan);
+
+  const usage = computeUsage(currentPlanId, usedThisMonth);
+  const renewal = fmt.date(cycleEnd);
   const monthlyCost = usage.plan.price + usage.overageCharge;
+
+  const scrollToPlans = () => {
+    if (typeof document !== "undefined") {
+      document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <PageShell
@@ -151,25 +59,31 @@ function BillingPage() {
           <Button variant="outline" size="sm">
             Contact sales
           </Button>
-          <Button size="sm" onClick={() => toast.success("Opening plan picker")}>
-            Upgrade plan <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+          <Button size="sm" onClick={scrollToPlans}>
+            Change plan <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
           </Button>
         </>
       }
     >
-      {usage.paused && <HardLimitBanner />}
-      {!usage.paused && usage.overage > 0 && <OverageBanner overage={usage.overage} charge={usage.overageCharge} />}
+      {usage.paused && <HardLimitBanner onUpgrade={scrollToPlans} />}
+      {!usage.paused && usage.overage > 0 && (
+        <OverageBanner overage={usage.overage} charge={usage.overageCharge} />
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat accent="signal" label="Current plan" value={usage.plan.name} hint={`Renews ${renewal}`} />
         <Stat
           label="Monthly cost"
           value={fmt.money(monthlyCost)}
-          hint={usage.overageCharge > 0 ? `${fmt.money(usage.plan.price)} base + ${fmt.money(usage.overageCharge)} overage` : "No overage this cycle"}
+          hint={
+            usage.overageCharge > 0
+              ? `${fmt.money(usage.plan.price)} base + ${fmt.money(usage.overageCharge)} overage`
+              : "No overage this cycle"
+          }
         />
         <Stat
           label="Impressions used"
-          value={fmt.compact(account.usedThisMonth)}
+          value={fmt.compact(usedThisMonth)}
           hint={`of ${fmt.compact(usage.limit)} · ${usage.pct.toFixed(0)}%`}
         />
         <Stat
@@ -180,18 +94,39 @@ function BillingPage() {
         />
       </div>
 
-      <UsagePanel usage={usage} />
+      <UsagePanel
+        usage={usage}
+        usedThisMonth={usedThisMonth}
+        usedToday={usedToday}
+        usedYesterday={usedYesterday}
+        cycleEnd={cycleEnd}
+      />
 
-      <PlansSection currentPlanId={account.currentPlanId} />
+      <PlansSection
+        currentPlanId={currentPlanId}
+        onSelectPlan={(id) => {
+          if (id === currentPlanId) return;
+          const from = plans.find((p) => p.id === currentPlanId)!;
+          const to = plans.find((p) => p.id === id)!;
+          setPlan(id);
+          const direction = to.price > from.price ? "Upgraded" : "Switched";
+          toast.success(`${direction} to ${to.name}`);
+        }}
+      />
 
-      <BillingDetailsSection renewal={renewal} />
+      <BillingDetailsSection
+        renewal={renewal}
+        paymentBrand={paymentBrand}
+        paymentLast4={paymentLast4}
+        autoRenew={autoRenew}
+      />
 
       <InvoicesSection />
     </PageShell>
   );
 }
 
-function HardLimitBanner() {
+function HardLimitBanner({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <div className="rounded-xl border border-[color:var(--ember)]/40 bg-[color:var(--ember)]/10 p-5">
       <div className="flex items-start gap-3">
@@ -205,7 +140,7 @@ function HardLimitBanner() {
             Upgrade your plan or wait until your billing cycle resets.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => toast.success("Opening plan picker")}>Upgrade plan</Button>
+            <Button size="sm" onClick={onUpgrade}>Upgrade plan</Button>
             <Button size="sm" variant="outline">View billing</Button>
           </div>
         </div>
@@ -233,9 +168,24 @@ function OverageBanner({ overage, charge }: { overage: number; charge: number })
   );
 }
 
-function UsagePanel({ usage }: { usage: ReturnType<typeof computeUsage> }) {
-  const reset = fmt.date(account.cycleEnd);
-  const dailyAvg = Math.round(account.usedThisMonth / 18); // days into cycle
+function UsagePanel({
+  usage,
+  usedThisMonth,
+  usedToday,
+  usedYesterday,
+  cycleEnd,
+}: {
+  usage: Usage;
+  usedThisMonth: number;
+  usedToday: number;
+  usedYesterday: number;
+  cycleEnd: string;
+}) {
+  const reset = fmt.date(cycleEnd);
+  const dailyAvg = Math.max(1, Math.round(usedThisMonth / 18));
+  const basePct = (Math.min(usedThisMonth, usage.limit) / usage.hardLimit) * 100;
+  const overPct =
+    (Math.max(0, Math.min(usedThisMonth, usage.hardLimit) - usage.limit) / usage.hardLimit) * 100;
   return (
     <section className="rounded-xl border bg-card p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -250,7 +200,7 @@ function UsagePanel({ usage }: { usage: ReturnType<typeof computeUsage> }) {
         </div>
         <div className="text-right">
           <div className="font-display text-2xl tracking-tight">
-            {fmt.n(account.usedThisMonth)}
+            {fmt.n(usedThisMonth)}
             <span className="ml-1 text-sm text-muted-foreground">/ {fmt.n(usage.limit)}</span>
           </div>
           <div className="text-xs text-muted-foreground">{usage.pct.toFixed(1)}% of plan used</div>
@@ -259,22 +209,17 @@ function UsagePanel({ usage }: { usage: ReturnType<typeof computeUsage> }) {
 
       <div className="mt-5">
         <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--border)]/60">
-          {(() => {
-            const basePct = Math.min(account.usedThisMonth, usage.limit) / usage.hardLimit * 100;
-            const overPct = Math.max(0, Math.min(account.usedThisMonth, usage.hardLimit) - usage.limit) / usage.hardLimit * 100;
-            return (
-              <>
-                <div className="absolute inset-y-0 left-0 bg-signal transition-[width] duration-500" style={{ width: `${basePct}%` }} />
-                {overPct > 0 && (
-                  <div
-                    className="absolute inset-y-0 bg-[color:var(--ember)] transition-[width] duration-500"
-                    style={{ left: `${basePct}%`, width: `${overPct}%` }}
-                  />
-                )}
-                <div className="absolute inset-y-0 left-1/2 w-px bg-white/20" aria-hidden />
-              </>
-            );
-          })()}
+          <div
+            className="absolute inset-y-0 left-0 bg-signal transition-[width] duration-500"
+            style={{ width: `${basePct}%` }}
+          />
+          {overPct > 0 && (
+            <div
+              className="absolute inset-y-0 bg-[color:var(--ember)] transition-[width] duration-500"
+              style={{ left: `${basePct}%`, width: `${overPct}%` }}
+            />
+          )}
+          <div className="absolute inset-y-0 left-1/2 w-px bg-white/20" aria-hidden />
         </div>
 
         <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -285,9 +230,13 @@ function UsagePanel({ usage }: { usage: ReturnType<typeof computeUsage> }) {
       </div>
 
       <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t pt-5 md:grid-cols-4">
-        <UsageMetric label="Used today" value={fmt.n(account.usedToday)} sub={`vs ${fmt.n(account.usedYesterday)} yesterday`} />
-        <UsageMetric label="Used this month" value={fmt.n(account.usedThisMonth)} sub={`~${fmt.n(dailyAvg)} / day`} />
-        <UsageMetric label="Remaining" value={usage.remaining > 0 ? fmt.n(usage.remaining) : "0"} sub={usage.remaining > 0 ? "included" : "using overage"} />
+        <UsageMetric label="Used today" value={fmt.n(usedToday)} sub={`vs ${fmt.n(usedYesterday)} yesterday`} />
+        <UsageMetric label="Used this month" value={fmt.n(usedThisMonth)} sub={`~${fmt.n(dailyAvg)} / day`} />
+        <UsageMetric
+          label="Remaining"
+          value={usage.remaining > 0 ? fmt.n(usage.remaining) : "0"}
+          sub={usage.remaining > 0 ? "included" : "using overage"}
+        />
         <UsageMetric
           label="Overage this cycle"
           value={usage.overage > 0 ? fmt.n(usage.overage) : "0"}
@@ -299,19 +248,40 @@ function UsagePanel({ usage }: { usage: ReturnType<typeof computeUsage> }) {
   );
 }
 
-function UsageMetric({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: boolean }) {
+function UsageMetric({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  accent?: boolean;
+}) {
   return (
     <div>
       <div className="text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
-      <div className={`mt-2 font-display text-2xl tracking-tight ${accent ? "text-[color:var(--ember)]" : ""}`}>{value}</div>
+      <div
+        className={`mt-2 font-display text-2xl tracking-tight ${accent ? "text-[color:var(--ember)]" : ""}`}
+      >
+        {value}
+      </div>
       <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
     </div>
   );
 }
 
-function PlansSection({ currentPlanId }: { currentPlanId: PlanId }) {
+function PlansSection({
+  currentPlanId,
+  onSelectPlan,
+}: {
+  currentPlanId: PlanId;
+  onSelectPlan: (id: PlanId) => void;
+}) {
+  const currentPrice = plans.find((p) => p.id === currentPlanId)!.price;
   return (
-    <section>
+    <section id="plans">
       <div className="mb-4 flex items-baseline justify-between">
         <div>
           <h2 className="font-display text-2xl">Choose the right plan</h2>
@@ -327,6 +297,14 @@ function PlansSection({ currentPlanId }: { currentPlanId: PlanId }) {
         {plans.map((p) => {
           const isCurrent = p.id === currentPlanId;
           const isRecommended = p.id === "growth";
+          const isDowngrade = p.price < currentPrice;
+          const ctaLabel = isCurrent
+            ? "Current plan"
+            : p.price === 0
+              ? "Switch to Free"
+              : isDowngrade
+                ? `Downgrade to ${p.name}`
+                : `Upgrade to ${p.name}`;
           return (
             <div
               key={p.id}
@@ -375,9 +353,9 @@ function PlansSection({ currentPlanId }: { currentPlanId: PlanId }) {
                 className="w-full"
                 variant={isCurrent ? "outline" : isRecommended ? "default" : "outline"}
                 disabled={isCurrent}
-                onClick={() => toast.success(`${p.name} plan selected`)}
+                onClick={() => onSelectPlan(p.id)}
               >
-                {isCurrent ? "Current plan" : p.price === 0 ? "Start free" : `Upgrade to ${p.name}`}
+                {ctaLabel}
               </Button>
             </div>
           );
@@ -391,7 +369,17 @@ function PlansSection({ currentPlanId }: { currentPlanId: PlanId }) {
   );
 }
 
-function BillingDetailsSection({ renewal }: { renewal: string }) {
+function BillingDetailsSection({
+  renewal,
+  paymentBrand,
+  paymentLast4,
+  autoRenew,
+}: {
+  renewal: string;
+  paymentBrand: string;
+  paymentLast4: string;
+  autoRenew: boolean;
+}) {
   return (
     <section className="grid gap-4 lg:grid-cols-2">
       <div className="rounded-xl border bg-card p-6">
@@ -403,7 +391,7 @@ function BillingDetailsSection({ renewal }: { renewal: string }) {
         </div>
         <div className="mt-4 flex items-center justify-between rounded-lg border bg-background/40 px-4 py-3">
           <div>
-            <div className="text-sm font-medium">{account.paymentBrand} •••• {account.paymentLast4}</div>
+            <div className="text-sm font-medium">{paymentBrand} •••• {paymentLast4}</div>
             <div className="text-xs text-muted-foreground">Expires 08 / 2028</div>
           </div>
           <Button size="sm" variant="outline">Update</Button>
@@ -424,7 +412,7 @@ function BillingDetailsSection({ renewal }: { renewal: string }) {
           <dt className="text-muted-foreground">Currency</dt>
           <dd className="text-right">USD</dd>
           <dt className="text-muted-foreground">Auto-renew</dt>
-          <dd className="text-right">Enabled</dd>
+          <dd className="text-right">{autoRenew ? "Enabled" : "Disabled"}</dd>
         </dl>
       </div>
     </section>

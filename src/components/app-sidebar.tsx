@@ -15,6 +15,10 @@ import {
   Plus,
 } from "lucide-react";
 
+import { fmt } from "@/lib/mock-data";
+import { computeUsage, useBillingStore } from "@/stores/billing-store";
+import { useProfileStore } from "@/stores/profile-store";
+
 import {
   Sidebar,
   SidebarContent,
@@ -56,6 +60,18 @@ export function AppSidebar() {
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
 
+  const currentPlanId = useBillingStore((s) => s.currentPlanId);
+  const usedThisMonth = useBillingStore((s) => s.usedThisMonth);
+  const cycleEnd = useBillingStore((s) => s.cycleEnd);
+  const usage = computeUsage(currentPlanId, usedThisMonth);
+  const profile = useProfileStore((s) => s.profile);
+  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+  const resetLabel = new Date(cycleEnd).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const barPct = Math.min(usage.pct, 100);
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border/60">
@@ -67,7 +83,7 @@ export function AppSidebar() {
             <div className="min-w-0">
               <div className="font-display text-lg leading-tight tracking-tight">Videofy</div>
               <div className="truncate text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
-                Atelier North · Growth
+                Atelier North · {usage.plan.name}
               </div>
             </div>
           )}
@@ -130,21 +146,38 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="mx-3 mt-2 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/40 p-4">
             <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/60">
-              <span>Growth plan</span>
-              <span className="text-signal">124%</span>
+              <span>{usage.plan.name} plan</span>
+              <span className={usage.overage > 0 ? "text-[color:var(--ember)]" : "text-signal"}>
+                {usage.pct.toFixed(0)}%
+              </span>
             </div>
             <div className="mt-1.5 font-display text-lg leading-tight">
-              24.8K <span className="text-sidebar-foreground/60 text-sm font-normal">/ 20K impressions</span>
+              {fmt.compact(usedThisMonth)}{" "}
+              <span className="text-sidebar-foreground/60 text-sm font-normal">
+                / {fmt.compact(usage.limit)} impressions
+              </span>
             </div>
             <div className="mt-3 h-1 overflow-hidden rounded-full bg-sidebar-border/50">
-              <div className="h-full w-full rounded-full bg-signal" />
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ${
+                  usage.overage > 0 ? "bg-[color:var(--ember)]" : "bg-signal"
+                }`}
+                style={{ width: `${barPct}%` }}
+              />
             </div>
             <div className="mt-2 text-[11px] text-sidebar-foreground/60">
-              Overage <span className="text-foreground">$5</span> · resets Jul 28
+              {usage.overage > 0 ? (
+                <>
+                  Overage <span className="text-foreground">{fmt.money(usage.overageCharge)}</span> ·
+                  resets {resetLabel}
+                </>
+              ) : (
+                <>Resets {resetLabel}</>
+              )}
             </div>
 
-            <Button size="sm" className="mt-3 w-full text-xs font-medium">
-              Upgrade plan
+            <Button size="sm" className="mt-3 w-full text-xs font-medium" asChild>
+              <Link to="/billing">Upgrade plan</Link>
             </Button>
           </div>
         )}
@@ -154,13 +187,15 @@ export function AppSidebar() {
         <Link to="/profile" className="flex items-center gap-2 rounded-md p-1.5 hover:bg-sidebar-accent">
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarImage src="https://api.dicebear.com/9.x/notionists/svg?seed=founder" />
-            <AvatarFallback>MW</AvatarFallback>
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">Mira Wren</div>
+              <div className="truncate text-sm font-medium">
+                {profile.firstName} {profile.lastName}
+              </div>
               <div className="truncate text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/60">
-                Owner
+                {profile.role}
               </div>
             </div>
           )}
