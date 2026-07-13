@@ -90,7 +90,7 @@ function Dashboard() {
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-3">
-            <h2 className="hero-serif hero-enter text-6xl md:text-7xl lg:text-[92px]">
+            <h2 className="hero-serif hero-enter break-words text-[clamp(2.5rem,12vw,3.75rem)] sm:text-6xl md:text-7xl lg:text-[92px]">
               {fmt.money(totals.revenue).replace("$", "$")}
             </h2>
             <span className="chip text-signal border-signal/30">
