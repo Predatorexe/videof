@@ -217,7 +217,7 @@ export const invoices: Invoice[] = Array.from({ length: 8 }).map((_, i) => ({
 export const notifications: NotificationItem[] = [
   { id: "n1", title: "Upload complete", body: "Linen Overshirt — Field Test finished processing.", time: "2m", kind: "success", read: false },
   { id: "n2", title: "Widget conversion up", body: "PDP Story Strip CTR increased 18% this week.", time: "1h", kind: "info", read: false },
-  { id: "n3", title: "Storage 78% used", body: "Consider archiving older videos or upgrading plan.", time: "5h", kind: "warning", read: false },
+  { id: "n3", title: "Impressions at 82% of plan", body: "You've used 16,400 of 20,000 monthly impressions. Overage will auto-bill at $5 / 10K.", time: "5h", kind: "warning", read: false },
   { id: "n4", title: "Invoice paid", body: "VF-2026-1041 — $49.00 charged successfully.", time: "1d", kind: "success", read: true },
   { id: "n5", title: "New product synced", body: "8 products imported from your catalog.", time: "2d", kind: "info", read: true },
   { id: "n6", title: "Import failed", body: "Instagram reel URL returned 404.", time: "3d", kind: "error", read: true },
