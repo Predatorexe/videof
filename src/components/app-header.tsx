@@ -49,6 +49,7 @@ export function AppHeader() {
   const profile = useProfileStore((s) => s.profile);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const setUploadOpen = useUiStore((s) => s.setUploadVideoOpen);
+  const openMobileSidebar = useUiStore((s) => s.setSidebarMobileOpen);
   const navigate = useNavigate();
   const unread = items.filter((n) => !n.read).length;
   const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
