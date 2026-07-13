@@ -147,7 +147,7 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <button className="ml-1 flex items-center gap-2 rounded-md p-1 hover:bg-accent" aria-label="Account menu">
               <Avatar className="h-7 w-7">
-                <AvatarImage src="https://api.dicebear.com/9.x/notionists/svg?seed=founder" />
+                <AvatarImage src={profile.avatarUrl} />
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </button>
