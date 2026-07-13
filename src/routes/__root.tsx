@@ -149,11 +149,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen w-full bg-background text-foreground">
+      <div className="flex min-h-screen w-full bg-background text-foreground" suppressHydrationWarning>
         <AppSidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col" suppressHydrationWarning>
           <AppHeader />
-          <main className="min-w-0 flex-1">
+          <main className="min-w-0 flex-1" suppressHydrationWarning>
             <Outlet />
           </main>
         </div>
