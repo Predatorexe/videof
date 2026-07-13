@@ -100,6 +100,8 @@ export type BillingState = {
   setPlan: (id: PlanId) => void;
   setAutoRenew: (v: boolean) => void;
   setUsage: (used: number) => void;
+  addImpressions: (delta: number) => void;
+  updatePayment: (input: { brand: string; last4: string }) => void;
 };
 
 export const useBillingStore = create<BillingState>((set) => ({
