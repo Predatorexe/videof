@@ -8,6 +8,7 @@ type UiState = {
   createCollectionOpen: boolean;
   updateCardOpen: boolean;
   sidebarCollapsed: boolean;
+  sidebarMobileOpen: boolean;
   setSearchOpen: (o: boolean) => void;
   setUploadVideoOpen: (o: boolean) => void;
   setCreateWidgetOpen: (o: boolean) => void;
@@ -16,6 +17,8 @@ type UiState = {
   setUpdateCardOpen: (o: boolean) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (c: boolean) => void;
+  setSidebarMobileOpen: (o: boolean) => void;
+  toggleSidebarMobile: () => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
@@ -26,6 +29,7 @@ export const useUiStore = create<UiState>((set) => ({
   createCollectionOpen: false,
   updateCardOpen: false,
   sidebarCollapsed: true,
+  sidebarMobileOpen: false,
   setSearchOpen: (o) => set({ searchOpen: o }),
   setUploadVideoOpen: (o) => set({ uploadVideoOpen: o }),
   setCreateWidgetOpen: (o) => set({ createWidgetOpen: o }),
@@ -34,5 +38,6 @@ export const useUiStore = create<UiState>((set) => ({
   setUpdateCardOpen: (o) => set({ updateCardOpen: o }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSidebarCollapsed: (c) => set({ sidebarCollapsed: c }),
+  setSidebarMobileOpen: (o) => set({ sidebarMobileOpen: o }),
+  toggleSidebarMobile: () => set((s) => ({ sidebarMobileOpen: !s.sidebarMobileOpen })),
 }));
-
