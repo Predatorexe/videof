@@ -181,7 +181,7 @@ function WidgetCustomizer() {
               <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${device === "mobile" ? 2 : 4}, minmax(0, 1fr))`, gap: spacing }}>
                 {videos.slice(0, device === "mobile" ? 4 : 4).map((v) => (
                   <div key={v.id} className="relative aspect-[9/16] overflow-hidden" style={{ borderRadius: radius, border: `2px solid ${accent}` }}>
-                    <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                       <div className="line-clamp-1 text-[10px] font-medium text-white">{v.title}</div>
                     </div>

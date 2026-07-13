@@ -116,7 +116,7 @@ function ProductsPage() {
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
-                      <img src={p.image} alt="" className="h-full w-full object-cover" />
+                      <img loading="lazy" decoding="async" src={p.image} alt="" className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0">
                       <div className="truncate font-medium">{p.title}</div>
@@ -154,7 +154,7 @@ function ProductsPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4 space-y-5">
-                <img src={active.image} alt="" className="h-56 w-full rounded-lg object-cover" />
+                <img loading="lazy" decoding="async" src={active.image} alt="" className="h-56 w-full rounded-lg object-cover" />
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -168,7 +168,7 @@ function ProductsPage() {
                       .map((v) => (
                         <li key={v.id} className="flex items-center gap-3 rounded-md border p-2">
                           <div className="h-9 w-14 overflow-hidden rounded bg-muted">
-                            <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+                            <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium">{v.title}</div>

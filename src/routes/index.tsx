@@ -185,7 +185,7 @@ function Dashboard() {
             {topVideos.map((v, i) => (
               <li key={v.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 p-4">
                 <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
-                  <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 grid place-items-center bg-black/30 opacity-0 transition group-hover:opacity-100">
                     <Play className="h-4 w-4 text-white" />
                   </div>
