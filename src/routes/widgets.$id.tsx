@@ -39,7 +39,7 @@ import { useProductsStore } from "@/stores/products-store";
 import { useCollectionsStore } from "@/stores/collections-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { WidgetRenderer } from "@/components/widget/widget-renderer";
-import { copy as copyToClipboard } from "@/lib/clipboard";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export const Route = createFileRoute("/widgets/$id")({
   loader: ({ params }) => {
@@ -429,9 +429,7 @@ function PublishPanel({
   onPreview: () => void;
 }) {
   const copyField = async (label: string, value: string) => {
-    const ok = await copyToClipboard(value);
-    if (ok) toast.success(`${label} copied`);
-    else toast.error("Copy failed");
+    await copyToClipboard(value, { successMessage: `${label} copied` });
   };
 
   if (!meta) {
