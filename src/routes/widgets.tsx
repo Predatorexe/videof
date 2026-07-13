@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { fmt, type WidgetType } from "@/lib/mock-data";
 import { useWidgetsStore } from "@/stores/widgets-store";
+import { useVideosStore } from "@/stores/videos-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useActivityStore } from "@/stores/activity-store";
 
