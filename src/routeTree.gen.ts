@@ -9,14 +9,39 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WidgetsRouteImport } from './routes/widgets'
 import { Route as VideosRouteImport } from './routes/videos'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as MediaRouteImport } from './routes/media'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as CollectionsRouteImport } from './routes/collections'
+import { Route as BillingRouteImport } from './routes/billing'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WidgetsIdRouteImport } from './routes/widgets.$id'
 
+const WidgetsRoute = WidgetsRouteImport.update({
+  id: '/widgets',
+  path: '/widgets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VideosRoute = VideosRouteImport.update({
   id: '/videos',
   path: '/videos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRoute = ProductsRouteImport.update({
@@ -24,9 +49,39 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MediaRoute = MediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CollectionsRoute = CollectionsRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillingRoute = BillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,48 +89,156 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WidgetsIdRoute = WidgetsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => WidgetsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/billing': typeof BillingRoute
   '/collections': typeof CollectionsRoute
+  '/customers': typeof CustomersRoute
+  '/help': typeof HelpRoute
+  '/media': typeof MediaRoute
+  '/notifications': typeof NotificationsRoute
   '/products': typeof ProductsRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/videos': typeof VideosRoute
+  '/widgets': typeof WidgetsRouteWithChildren
+  '/widgets/$id': typeof WidgetsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/billing': typeof BillingRoute
   '/collections': typeof CollectionsRoute
+  '/customers': typeof CustomersRoute
+  '/help': typeof HelpRoute
+  '/media': typeof MediaRoute
+  '/notifications': typeof NotificationsRoute
   '/products': typeof ProductsRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/videos': typeof VideosRoute
+  '/widgets': typeof WidgetsRouteWithChildren
+  '/widgets/$id': typeof WidgetsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/billing': typeof BillingRoute
   '/collections': typeof CollectionsRoute
+  '/customers': typeof CustomersRoute
+  '/help': typeof HelpRoute
+  '/media': typeof MediaRoute
+  '/notifications': typeof NotificationsRoute
   '/products': typeof ProductsRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/videos': typeof VideosRoute
+  '/widgets': typeof WidgetsRouteWithChildren
+  '/widgets/$id': typeof WidgetsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/collections' | '/products' | '/videos'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/billing'
+    | '/collections'
+    | '/customers'
+    | '/help'
+    | '/media'
+    | '/notifications'
+    | '/products'
+    | '/profile'
+    | '/settings'
+    | '/videos'
+    | '/widgets'
+    | '/widgets/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/collections' | '/products' | '/videos'
-  id: '__root__' | '/' | '/collections' | '/products' | '/videos'
+  to:
+    | '/'
+    | '/analytics'
+    | '/billing'
+    | '/collections'
+    | '/customers'
+    | '/help'
+    | '/media'
+    | '/notifications'
+    | '/products'
+    | '/profile'
+    | '/settings'
+    | '/videos'
+    | '/widgets'
+    | '/widgets/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics'
+    | '/billing'
+    | '/collections'
+    | '/customers'
+    | '/help'
+    | '/media'
+    | '/notifications'
+    | '/products'
+    | '/profile'
+    | '/settings'
+    | '/videos'
+    | '/widgets'
+    | '/widgets/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
+  BillingRoute: typeof BillingRoute
   CollectionsRoute: typeof CollectionsRoute
+  CustomersRoute: typeof CustomersRoute
+  HelpRoute: typeof HelpRoute
+  MediaRoute: typeof MediaRoute
+  NotificationsRoute: typeof NotificationsRoute
   ProductsRoute: typeof ProductsRoute
+  ProfileRoute: typeof ProfileRoute
+  SettingsRoute: typeof SettingsRoute
   VideosRoute: typeof VideosRoute
+  WidgetsRoute: typeof WidgetsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/widgets': {
+      id: '/widgets'
+      path: '/widgets'
+      fullPath: '/widgets'
+      preLoaderRoute: typeof WidgetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/videos': {
       id: '/videos'
       path: '/videos'
       fullPath: '/videos'
       preLoaderRoute: typeof VideosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -85,11 +248,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/media': {
+      id: '/media'
+      path: '/media'
+      fullPath: '/media'
+      preLoaderRoute: typeof MediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/collections': {
       id: '/collections'
       path: '/collections'
       fullPath: '/collections'
       preLoaderRoute: typeof CollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/billing': {
+      id: '/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -99,15 +304,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/widgets/$id': {
+      id: '/widgets/$id'
+      path: '/$id'
+      fullPath: '/widgets/$id'
+      preLoaderRoute: typeof WidgetsIdRouteImport
+      parentRoute: typeof WidgetsRoute
+    }
   }
 }
 
+interface WidgetsRouteChildren {
+  WidgetsIdRoute: typeof WidgetsIdRoute
+}
+
+const WidgetsRouteChildren: WidgetsRouteChildren = {
+  WidgetsIdRoute: WidgetsIdRoute,
+}
+
+const WidgetsRouteWithChildren =
+  WidgetsRoute._addFileChildren(WidgetsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsRoute: AnalyticsRoute,
+  BillingRoute: BillingRoute,
   CollectionsRoute: CollectionsRoute,
+  CustomersRoute: CustomersRoute,
+  HelpRoute: HelpRoute,
+  MediaRoute: MediaRoute,
+  NotificationsRoute: NotificationsRoute,
   ProductsRoute: ProductsRoute,
+  ProfileRoute: ProfileRoute,
+  SettingsRoute: SettingsRoute,
   VideosRoute: VideosRoute,
+  WidgetsRoute: WidgetsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
