@@ -47,6 +47,7 @@ function WidgetCustomizer() {
   const widget = useWidgetsStore((s) => s.items.find((w) => w.id === id));
   const stored = useWidgetsStore((s) => s.settings[id]);
   const updateSettings = useWidgetsStore((s) => s.updateSettings);
+  const publish = useWidgetsStore((s) => s.publish);
 
   const baseline = stored ?? defaultWidgetSettings;
   const [draft, setDraft] = useState<WidgetSettings>(baseline);
@@ -70,6 +71,12 @@ function WidgetCustomizer() {
     toast.success("Widget saved");
   };
 
+  const handlePublish = () => {
+    updateSettings(id, draft);
+    publish(id);
+    toast.success(`${widget.name} published`);
+  };
+
   const handleCancel = () => {
     setDraft(baseline);
     toast("Changes discarded");
@@ -77,9 +84,9 @@ function WidgetCustomizer() {
 
   return (
     <PageShell
-      eyebrow={`Widget · ${widget.type}`}
+      eyebrow={`Widget · ${widget.type}${widget.enabled ? " · Live" : " · Paused"}`}
       title={widget.name}
-      description="Live preview updates as you edit. Save to publish changes to your storefront."
+      description="Live preview updates as you edit. Save to store changes, publish to push them to your storefront."
       actions={
         <>
           <Button variant="outline" size="sm" asChild>
@@ -90,8 +97,11 @@ function WidgetCustomizer() {
           <Button variant="outline" size="sm" onClick={handleCancel} disabled={!dirty}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={!dirty}>
-            Save changes
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={!dirty}>
+            Save draft
+          </Button>
+          <Button size="sm" onClick={handlePublish}>
+            {widget.enabled ? "Republish" : "Publish"}
           </Button>
         </>
       }
