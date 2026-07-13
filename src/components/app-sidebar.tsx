@@ -112,18 +112,17 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {!collapsed && (
-          <div className="mx-3 mt-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
-              Storage
+          <div className="mx-3 mt-2 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/40 p-4">
+            <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/60">
+              Growth plan
             </div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="font-display text-2xl">12.4</span>
-              <span className="text-xs text-sidebar-foreground/70">/ 25 GB</span>
+            <div className="mt-1.5 font-display text-lg leading-tight">
+              128 <span className="text-sidebar-foreground/60 text-sm font-normal">/ 200 videos</span>
             </div>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-sidebar-border/50">
-              <div className="h-full w-[52%] rounded-full bg-signal" />
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-sidebar-border/50">
+              <div className="h-full w-[64%] rounded-full bg-signal" />
             </div>
-            <Button size="sm" variant="secondary" className="mt-3 w-full text-xs">
+            <Button size="sm" className="mt-3 w-full text-xs font-medium">
               Upgrade plan
             </Button>
           </div>

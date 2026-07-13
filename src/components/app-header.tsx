@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useTheme } from "@/hooks/use-theme";
 import { notifications } from "@/lib/mock-data";
 
 const labels: Record<string, string> = {
@@ -35,7 +34,6 @@ const labels: Record<string, string> = {
 };
 
 export function AppHeader() {
-  const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const parts = pathname.split("/").filter(Boolean);
   const unread = notifications.filter((n) => !n.read).length;
@@ -81,9 +79,6 @@ export function AppHeader() {
           Upload
         </Button>
 
-        <Button variant="ghost" size="icon" onClick={toggle} className="h-9 w-9">
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
