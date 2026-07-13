@@ -93,7 +93,7 @@ const rand = () => {
   __seed = (__seed * 1664525 + 1013904223) >>> 0;
   return __seed / 0xffffffff;
 };
-const rInt = (max: number) => rInt(max);
+const rInt = (max: number) => Math.floor(rand() * max);
 
 const thumbs = [
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=640&auto=format&fit=crop&q=70",
