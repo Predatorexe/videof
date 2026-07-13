@@ -21,7 +21,6 @@ function SettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="api">API keys</TabsTrigger>
@@ -83,25 +82,6 @@ function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="storage" className="mt-6">
-          <Card title="Storage & delivery">
-            <FormRow label="Cloudinary cloud name">
-              <Input placeholder="atelier-north" />
-            </FormRow>
-            <FormRow label="Delivery CDN">
-              <Select defaultValue="cf"><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cf">Cloudflare</SelectItem>
-                  <SelectItem value="fastly">Fastly</SelectItem>
-                  <SelectItem value="bunny">Bunny.net</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormRow>
-            <ToggleRow label="Auto-compress uploads" hint="Reduce filesize while preserving quality." defaultChecked />
-            <ToggleRow label="Generate thumbnails" hint="Extract first-frame preview for every upload." defaultChecked />
-            <Save />
-          </Card>
-        </TabsContent>
 
         <TabsContent value="notifications" className="mt-6">
           <Card title="Email & alerts">

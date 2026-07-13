@@ -76,54 +76,69 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Workspace</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel className="text-[10px] font-medium tracking-[0.2em]">Workspace</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {main.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {main.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      className="group/mi h-9 rounded-lg text-[13px] font-medium text-sidebar-foreground/85 transition-colors hover:bg-white/[0.04] hover:text-white data-[active=true]:bg-signal/10 data-[active=true]:text-white data-[active=true]:shadow-[inset_0_0_0_1px_rgba(160,242,0,0.25),0_0_24px_-8px_rgba(160,242,0,0.5)]"
+                    >
+                      <Link to={item.url} className="flex items-center gap-2.5">
+                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-signal" : "text-sidebar-foreground/60 group-hover/mi:text-white"}`} />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Account</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel className="text-[10px] font-medium tracking-[0.2em]">Account</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {account.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {account.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      className="group/mi h-9 rounded-lg text-[13px] font-medium text-sidebar-foreground/85 transition-colors hover:bg-white/[0.04] hover:text-white data-[active=true]:bg-signal/10 data-[active=true]:text-white data-[active=true]:shadow-[inset_0_0_0_1px_rgba(160,242,0,0.25),0_0_24px_-8px_rgba(160,242,0,0.5)]"
+                    >
+                      <Link to={item.url} className="flex items-center gap-2.5">
+                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-signal" : "text-sidebar-foreground/60 group-hover/mi:text-white"}`} />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {!collapsed && (
-          <div className="mx-3 mt-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
-              Storage
+          <div className="mx-3 mt-2 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/40 p-4">
+            <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/60">
+              Growth plan
             </div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="font-display text-2xl">12.4</span>
-              <span className="text-xs text-sidebar-foreground/70">/ 25 GB</span>
+            <div className="mt-1.5 font-display text-lg leading-tight">
+              128 <span className="text-sidebar-foreground/60 text-sm font-normal">/ 200 videos</span>
             </div>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-sidebar-border/50">
-              <div className="h-full w-[52%] rounded-full bg-signal" />
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-sidebar-border/50">
+              <div className="h-full w-[64%] rounded-full bg-signal" />
             </div>
-            <Button size="sm" variant="secondary" className="mt-3 w-full text-xs">
+            <Button size="sm" className="mt-3 w-full text-xs font-medium">
               Upgrade plan
             </Button>
           </div>

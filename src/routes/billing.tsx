@@ -57,7 +57,7 @@ function BillingPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat accent="signal" label="Current plan" value="Growth" hint="Renews Mar 12" />
         <Stat label="Videos" value="128 / 200" hint="72 remaining" />
-        <Stat label="Storage" value="12.4 / 25 GB" hint="52% used" />
+        <Stat label="Widget impressions" value="324K" hint="of 500K" />
         <Stat accent="ember" label="Next invoice" value={fmt.money(49)} hint="in 12 days" />
       </div>
 
@@ -108,7 +108,6 @@ function BillingPage() {
         <h3 className="font-display text-xl">Usage this month</h3>
         <div className="mt-4 space-y-4">
           <UsageBar label="Videos" value={128} max={200} />
-          <UsageBar label="Storage" value={12.4} max={25} unit="GB" />
           <UsageBar label="Widget impressions" value={324120} max={500000} />
         </div>
       </section>
