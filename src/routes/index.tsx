@@ -1,23 +1,11 @@
+import { lazy, Suspense, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { ArrowRight, ArrowUpRight, Film, Play, Sparkles, TrendingUp } from "lucide-react";
 
 import { PageShell, Stat } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import {
   fmt,
   revenueTrend,
@@ -27,13 +15,33 @@ import {
   viewsTrend,
 } from "@/lib/mock-data";
 
+const ViewsAreaChart = lazy(() => import("@/components/charts/views-area-chart"));
+const TrafficDonut = lazy(() => import("@/components/charts/traffic-donut"));
+const RevenueBarChart = lazy(() => import("@/components/charts/revenue-bar-chart"));
+
 export const Route = createFileRoute("/")({
   component: Dashboard,
+  pendingComponent: DashboardPending,
 });
 
 const donutColors = ["var(--signal)", "var(--ember)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
+function DashboardPending() {
+  return (
+    <PageShell eyebrow="Overview" title="Loading dashboard…" description="Fetching the latest metrics.">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <ChartSkeleton key={i} className="h-24" />
+        ))}
+      </div>
+      <ChartSkeleton className="h-64" />
+    </PageShell>
+  );
+}
+
 function Dashboard() {
+  const rankedVideos = useMemo(() => topVideos.slice(0, 5), []);
+
   return (
     <PageShell
       eyebrow="Overview · This week"
@@ -77,28 +85,9 @@ function Dashboard() {
             </Badge>
           </div>
           <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={viewsTrend} margin={{ left: -20, right: 8, top: 8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="viewsFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--signal)" stopOpacity={0.6} />
-                    <stop offset="100%" stopColor="var(--signal)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Area type="monotone" dataKey="views" stroke="var(--signal)" strokeWidth={2} fill="url(#viewsFill)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<ChartSkeleton className="h-64" />}>
+              <ViewsAreaChart data={viewsTrend} />
+            </Suspense>
           </div>
         </div>
 
@@ -108,22 +97,9 @@ function Dashboard() {
           </div>
           <div className="mt-2 grid grid-cols-[1fr_1fr] items-center gap-4">
             <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={trafficSources}
-                    dataKey="value"
-                    innerRadius={38}
-                    outerRadius={64}
-                    paddingAngle={3}
-                    stroke="var(--card)"
-                  >
-                    {trafficSources.map((_, i) => (
-                      <Cell key={i} fill={donutColors[i % donutColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<ChartSkeleton className="h-40" />}>
+                <TrafficDonut data={trafficSources} colors={donutColors} />
+              </Suspense>
             </div>
             <ul className="space-y-1.5 text-xs">
               {trafficSources.map((s, i) => (
@@ -149,23 +125,9 @@ function Dashboard() {
             <Badge variant="outline" className="text-[10px]">USD</Badge>
           </div>
           <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueTrend} margin={{ left: -20, right: 8 }}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="revenue" fill="var(--signal)" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="refunds" fill="var(--ember)" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<ChartSkeleton className="h-56" />}>
+              <RevenueBarChart data={revenueTrend} />
+            </Suspense>
           </div>
         </div>
 
@@ -182,7 +144,7 @@ function Dashboard() {
             </Button>
           </div>
           <ul className="divide-y">
-            {topVideos.map((v, i) => (
+            {rankedVideos.map((v, i) => (
               <li key={v.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 p-4">
                 <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
                   <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="h-full w-full object-cover" />
