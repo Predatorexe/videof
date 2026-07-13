@@ -1,12 +1,17 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageShell, Stat } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
-import { fmt, revenueTrend, topVideos, topWidgets, viewsTrend } from "@/lib/mock-data";
+import { fmt, revenueTrend, viewsTrend } from "@/lib/mock-data";
+import { useVideosStore } from "@/stores/videos-store";
+import { useWidgetsStore } from "@/stores/widgets-store";
+import { useActivityStore } from "@/stores/activity-store";
+import { exportCsv } from "@/lib/csv";
 
 const ViewsAreaChart = lazy(() => import("@/components/charts/views-area-chart"));
 const RevenueBarChart = lazy(() => import("@/components/charts/revenue-bar-chart"));
@@ -33,9 +38,83 @@ function AnalyticsPending() {
   );
 }
 
+type Range = "daily" | "weekly" | "monthly" | "yearly";
+
+function aggregate(range: Range) {
+  // Derive a series from the daily seed, aggregated to the chosen bucket.
+  if (range === "daily") return viewsTrend;
+  const bucket = range === "weekly" ? 7 : range === "monthly" ? 4 : 12;
+  const out: { day: string; views: number; clicks: number }[] = [];
+  for (let i = 0; i < viewsTrend.length; i += bucket) {
+    const slice = viewsTrend.slice(i, i + bucket);
+    if (slice.length === 0) continue;
+    out.push({
+      day: range === "yearly" ? `M${out.length + 1}` : `${range[0].toUpperCase()}${out.length + 1}`,
+      views: slice.reduce((s, x) => s + x.views, 0),
+      clicks: slice.reduce((s, x) => s + x.clicks, 0),
+    });
+  }
+  return out;
+}
+
 function AnalyticsPage() {
-  const rankedVideos = useMemo(() => topVideos.slice(0, 8), []);
-  const rankedWidgets = useMemo(() => topWidgets.slice(0, 10), []);
+  const videos = useVideosStore((s) => s.items);
+  const widgets = useWidgetsStore((s) => s.items);
+  const log = useActivityStore((s) => s.log);
+  const [range, setRange] = useState<Range>("daily");
+
+  const series = useMemo(() => aggregate(range), [range]);
+
+  const totals = useMemo(() => {
+    const views = videos.reduce((s, v) => s + v.views, 0);
+    const clicks = videos.reduce((s, v) => s + v.clicks, 0);
+    const impressions = widgets.reduce((s, w) => s + w.impressions, 0);
+    const ctr = views > 0 ? (clicks / views) * 100 : 0;
+    const completion = 55 + (ctr % 8); // deterministic proxy
+    const avgSec = 30 + Math.round((clicks % 40));
+    return { views, clicks, impressions, ctr, completion, avgSec };
+  }, [videos, widgets]);
+
+  const rankedVideos = useMemo(
+    () => [...videos].sort((a, b) => b.views - a.views).slice(0, 8),
+    [videos],
+  );
+  const rankedWidgets = useMemo(
+    () => [...widgets].sort((a, b) => b.ctr - a.ctr).slice(0, 10),
+    [widgets],
+  );
+
+  const exportSeriesCsv = () => {
+    exportCsv(`analytics-${range}`, series);
+    log("export", `Analytics exported (${range})`);
+    toast.success("CSV downloaded");
+  };
+
+  const exportSummaryXls = () => {
+    // Simple TSV — opens cleanly in Excel/Numbers.
+    const rows = [
+      ["Metric", "Value"],
+      ["Views", totals.views],
+      ["Clicks", totals.clicks],
+      ["Impressions", totals.impressions],
+      ["CTR (%)", totals.ctr.toFixed(2)],
+      ["Avg watch time (sec)", totals.avgSec],
+      ["Completion (%)", totals.completion.toFixed(1)],
+      ["Range", range],
+    ];
+    const tsv = rows.map((r) => r.join("\t")).join("\n");
+    const blob = new Blob([tsv], { type: "application/vnd.ms-excel;charset=utf-8" });
+    if (typeof document !== "undefined") {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `analytics-summary-${range}.xls`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+    log("export", "Analytics summary exported (Excel)");
+    toast.success("Excel downloaded");
+  };
 
   return (
     <PageShell
@@ -44,16 +123,16 @@ function AnalyticsPage() {
       description="Views, clicks, watch time, and conversion — sliced by video, widget, and source."
       actions={
         <>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={exportSummaryXls}>
             <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" /> Excel
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={exportSeriesCsv}>
             <Download className="mr-1.5 h-3.5 w-3.5" /> CSV
           </Button>
         </>
       }
     >
-      <Tabs defaultValue="daily">
+      <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
         <TabsList>
           <TabsTrigger value="daily">Daily</TabsTrigger>
           <TabsTrigger value="weekly">Weekly</TabsTrigger>
@@ -63,16 +142,16 @@ function AnalyticsPage() {
       </Tabs>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat accent="signal" label="Views" value={fmt.compact(213442)} hint="+12.4% WoW" />
-        <Stat label="Unique visitors" value={fmt.compact(84120)} hint="+8.1% WoW" />
-        <Stat label="Avg. watch time" value="00:42" hint="+3s" />
-        <Stat accent="ember" label="Completion" value="61.8%" hint="+4.2pt" />
+        <Stat accent="signal" label="Views" value={fmt.compact(totals.views)} hint={`${videos.length} videos`} />
+        <Stat label="Impressions" value={fmt.compact(totals.impressions)} hint={`${widgets.length} widgets`} />
+        <Stat label="Avg. watch" value={`${String(Math.floor(totals.avgSec / 60)).padStart(2, "0")}:${String(totals.avgSec % 60).padStart(2, "0")}`} hint="+3s vs prior" />
+        <Stat accent="ember" label="CTR" value={fmt.pct(totals.ctr)} hint={`${fmt.pct(totals.completion)} completion`} />
       </div>
 
       <section className="grid gap-3 lg:grid-cols-2">
-        <ChartCard title="Views vs clicks">
+        <ChartCard title={`Views vs clicks · ${range}`}>
           <Suspense fallback={<ChartSkeleton className="h-56" />}>
-            <ViewsAreaChart data={viewsTrend} showClicks />
+            <ViewsAreaChart data={series} showClicks />
           </Suspense>
         </ChartCard>
 
@@ -84,7 +163,7 @@ function AnalyticsPage() {
 
         <ChartCard title="Watch time (min)">
           <Suspense fallback={<ChartSkeleton className="h-56" />}>
-            <WatchTimeLineChart data={viewsTrend} />
+            <WatchTimeLineChart data={series} />
           </Suspense>
         </ChartCard>
 
