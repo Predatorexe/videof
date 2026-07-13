@@ -259,17 +259,24 @@ function UsagePanel({ usage }: { usage: ReturnType<typeof computeUsage> }) {
 
       <div className="mt-5">
         <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--border)]/60">
-          <div
-            className="h-full bg-signal transition-[width] duration-500"
-            style={{ width: `${Math.min(usage.pct, 100)}%` }}
-          />
-          {usage.pct > 100 && (
-            <div
-              className="absolute top-0 h-full bg-[color:var(--ember)]"
-              style={{ left: "100%", width: `${Math.min(usage.pct - 100, 100)}%`, transform: "translateX(-100%)", marginLeft: `${Math.min(usage.pct, 100)}%` }}
-            />
-          )}
+          {(() => {
+            const basePct = Math.min(account.usedThisMonth, usage.limit) / usage.hardLimit * 100;
+            const overPct = Math.max(0, Math.min(account.usedThisMonth, usage.hardLimit) - usage.limit) / usage.hardLimit * 100;
+            return (
+              <>
+                <div className="absolute inset-y-0 left-0 bg-signal transition-[width] duration-500" style={{ width: `${basePct}%` }} />
+                {overPct > 0 && (
+                  <div
+                    className="absolute inset-y-0 bg-[color:var(--ember)] transition-[width] duration-500"
+                    style={{ left: `${basePct}%`, width: `${overPct}%` }}
+                  />
+                )}
+                <div className="absolute inset-y-0 left-1/2 w-px bg-white/20" aria-hidden />
+              </>
+            );
+          })()}
         </div>
+
         <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           <span>0</span>
           <span>Plan limit · {fmt.compact(usage.limit)}</span>
