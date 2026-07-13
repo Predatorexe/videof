@@ -85,8 +85,15 @@ export type NotificationItem = {
   read: boolean;
 };
 
-const now = Date.now();
-const daysAgo = (n: number) => new Date(now - n * 86400000).toISOString();
+// Deterministic seed so SSR and client render identical mock data (no hydration mismatch).
+const EPOCH = Date.UTC(2026, 6, 13); // 2026-07-13
+const daysAgo = (n: number) => new Date(EPOCH - n * 86400000).toISOString();
+let __seed = 0x1a2b3c;
+const rand = () => {
+  __seed = (__seed * 1664525 + 1013904223) >>> 0;
+  return __seed / 0xffffffff;
+};
+const rInt = (max: number) => Math.floor(rand() * max);
 
 const thumbs = [
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=640&auto=format&fit=crop&q=70",
@@ -122,12 +129,12 @@ export const videos: Video[] = videoTitles.map((title, i) => ({
   id: `vid_${1000 + i}`,
   title,
   thumbnail: thumbs[i % thumbs.length],
-  duration: `${Math.floor(Math.random() * 2) + 0}:${String(Math.floor(Math.random() * 55) + 5).padStart(2, "0")}`,
-  views: 1200 + Math.floor(Math.random() * 48000),
-  clicks: 40 + Math.floor(Math.random() * 3200),
+  duration: `${rInt(2) + 0}:${String(rInt(55) + 5).padStart(2, "0")}`,
+  views: 1200 + rInt(48000),
+  clicks: 40 + rInt(3200),
   status: (["published", "published", "published", "draft", "processing"] as const)[i % 5],
   uploadedAt: daysAgo(i * 2 + 1),
-  size: `${(6 + Math.random() * 40).toFixed(1)} MB`,
+  size: `${(6 + rand() * 40).toFixed(1)} MB`,
   tags: [["hero", "pdp", "campaign"][i % 3], ["ss24", "fw24", "core"][i % 3]],
   productIds: [`prd_${2000 + (i % 8)}`, `prd_${2000 + ((i + 3) % 8)}`],
 }));
@@ -148,7 +155,7 @@ export const products: Product[] = productTitles.map((title, i) => ({
   title,
   image: thumbs[(i + 2) % thumbs.length],
   price: [68, 149, 42, 129, 189, 24, 220, 385][i],
-  inventory: 12 + Math.floor(Math.random() * 240),
+  inventory: 12 + rInt(240),
   status: (["active", "active", "active", "draft"] as const)[i % 4],
   videoIds: videos.filter((v) => v.productIds.includes(`prd_${2000 + i}`)).map((v) => v.id),
   vendor: ["Atelier North", "Field Studio", "Common Goods"][i % 3],
@@ -167,8 +174,8 @@ export const collections: Collection[] = collectionTitles.map((title, i) => ({
   id: `col_${3000 + i}`,
   title,
   cover: thumbs[(i + 5) % thumbs.length],
-  productCount: 6 + Math.floor(Math.random() * 24),
-  videoCount: 3 + Math.floor(Math.random() * 12),
+  productCount: 6 + rInt(24),
+  videoCount: 3 + rInt(12),
   updatedAt: daysAgo(i + 1),
 }));
 
@@ -192,8 +199,8 @@ export const customers: Customer[] = firstNames.map((f, i) => ({
   id: `cus_${4000 + i}`,
   name: `${f} ${lastNames[i]}`,
   email: `${f.toLowerCase()}.${lastNames[i].toLowerCase()}@example.com`,
-  orders: 1 + Math.floor(Math.random() * 32),
-  spent: Math.floor(80 + Math.random() * 4200),
+  orders: 1 + rInt(32),
+  spent: Math.floor(80 + rand() * 4200),
   lastSeen: daysAgo(i),
   avatar: `https://api.dicebear.com/9.x/notionists/svg?seed=${f}${lastNames[i]}`,
 }));
@@ -220,14 +227,14 @@ export const notifications: NotificationItem[] = [
 
 export const viewsTrend = Array.from({ length: 28 }).map((_, i) => ({
   day: `D${i + 1}`,
-  views: 800 + Math.round(Math.sin(i / 3) * 300 + Math.random() * 400 + i * 40),
-  clicks: 40 + Math.round(Math.cos(i / 4) * 20 + Math.random() * 30 + i * 3),
+  views: 800 + Math.round(Math.sin(i / 3) * 300 + rand() * 400 + i * 40),
+  clicks: 40 + Math.round(Math.cos(i / 4) * 20 + rand() * 30 + i * 3),
 }));
 
 export const revenueTrend = Array.from({ length: 12 }).map((_, i) => ({
   month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i],
-  revenue: 2400 + Math.round(Math.random() * 3200 + i * 220),
-  refunds: 80 + Math.round(Math.random() * 200),
+  revenue: 2400 + Math.round(rand() * 3200 + i * 220),
+  refunds: 80 + Math.round(rand() * 200),
 }));
 
 export const trafficSources = [
