@@ -85,8 +85,15 @@ export type NotificationItem = {
   read: boolean;
 };
 
-const now = Date.now();
-const daysAgo = (n: number) => new Date(now - n * 86400000).toISOString();
+// Deterministic seed so SSR and client render identical mock data (no hydration mismatch).
+const EPOCH = Date.UTC(2026, 6, 13); // 2026-07-13
+const daysAgo = (n: number) => new Date(EPOCH - n * 86400000).toISOString();
+let __seed = 0x1a2b3c;
+const rand = () => {
+  __seed = (__seed * 1664525 + 1013904223) >>> 0;
+  return __seed / 0xffffffff;
+};
+const rInt = (max: number) => Math.floor(rand() * max);
 
 const thumbs = [
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=640&auto=format&fit=crop&q=70",
