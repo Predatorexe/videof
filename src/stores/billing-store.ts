@@ -100,6 +100,8 @@ export type BillingState = {
   setPlan: (id: PlanId) => void;
   setAutoRenew: (v: boolean) => void;
   setUsage: (used: number) => void;
+  addImpressions: (delta: number) => void;
+  updatePayment: (input: { brand: string; last4: string }) => void;
 };
 
 export const useBillingStore = create<BillingState>((set) => ({
@@ -115,6 +117,9 @@ export const useBillingStore = create<BillingState>((set) => ({
   setPlan: (id) => set({ currentPlanId: id }),
   setAutoRenew: (v) => set({ autoRenew: v }),
   setUsage: (used) => set({ usedThisMonth: used }),
+  addImpressions: (delta) =>
+    set((s) => ({ usedThisMonth: s.usedThisMonth + delta, usedToday: s.usedToday + delta })),
+  updatePayment: ({ brand, last4 }) => set({ paymentBrand: brand, paymentLast4: last4 }),
 }));
 
 export type Usage = {

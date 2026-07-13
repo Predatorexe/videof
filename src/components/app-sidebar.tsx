@@ -186,7 +186,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border/60">
         <Link to="/profile" className="flex items-center gap-2 rounded-md p-1.5 hover:bg-sidebar-accent">
           <Avatar className="h-8 w-8 shrink-0">
-            <AvatarImage src="https://api.dicebear.com/9.x/notionists/svg?seed=founder" />
+            <AvatarImage src={profile.avatarUrl} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           {!collapsed && (

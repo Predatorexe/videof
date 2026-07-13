@@ -16,6 +16,13 @@ import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import { GlobalSearch } from "@/components/global-search";
+import { UploadVideoDialog } from "@/components/dialogs/upload-video-dialog";
+import { CreateWidgetDialog } from "@/components/dialogs/create-widget-dialog";
+import { CreateProductDialog } from "@/components/dialogs/create-product-dialog";
+import { CreateCollectionDialog } from "@/components/dialogs/create-collection-dialog";
+import { UpdateCardDialog } from "@/components/dialogs/update-card-dialog";
+import { useUiStore } from "@/stores/ui-store";
 
 function NotFoundComponent() {
   return (
@@ -118,6 +125,28 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const searchOpen = useUiStore((s) => s.searchOpen);
+  const setSearchOpen = useUiStore((s) => s.setSearchOpen);
+  const createWidgetOpen = useUiStore((s) => s.createWidgetOpen);
+  const setCreateWidgetOpen = useUiStore((s) => s.setCreateWidgetOpen);
+  const createProductOpen = useUiStore((s) => s.createProductOpen);
+  const setCreateProductOpen = useUiStore((s) => s.setCreateProductOpen);
+  const createCollectionOpen = useUiStore((s) => s.createCollectionOpen);
+  const setCreateCollectionOpen = useUiStore((s) => s.setCreateCollectionOpen);
+  const updateCardOpen = useUiStore((s) => s.updateCardOpen);
+  const setUpdateCardOpen = useUiStore((s) => s.setUpdateCardOpen);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(!useUiStore.getState().searchOpen);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setSearchOpen]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -132,6 +161,15 @@ function RootComponent() {
           </div>
         </div>
         <Toaster />
+        <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+        <UploadVideoDialog />
+        <CreateWidgetDialog open={createWidgetOpen} onOpenChange={setCreateWidgetOpen} />
+        <CreateProductDialog open={createProductOpen} onOpenChange={setCreateProductOpen} />
+        <CreateCollectionDialog
+          open={createCollectionOpen}
+          onOpenChange={setCreateCollectionOpen}
+        />
+        <UpdateCardDialog open={updateCardOpen} onOpenChange={setUpdateCardOpen} />
       </SidebarProvider>
     </QueryClientProvider>
   );

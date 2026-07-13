@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Copy, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageShell } from "@/components/page-shell";
@@ -17,10 +18,14 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useSettingsStore } from "@/stores/settings-store";
+import { useActivityStore } from "@/stores/activity-store";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
+
+const URL_RE = /^https?:\/\/\S+$/;
 
 function SettingsPage() {
   const general = useSettingsStore((s) => s.general);
@@ -34,6 +39,7 @@ function SettingsPage() {
   const saveSecurity = useSettingsStore((s) => s.saveSecurity);
   const saveApi = useSettingsStore((s) => s.saveApi);
   const rotateKeys = useSettingsStore((s) => s.rotateKeys);
+  const log = useActivityStore((s) => s.log);
 
   const [gen, setGen] = useState(general);
   const [app, setApp] = useState(appearance);
@@ -41,10 +47,59 @@ function SettingsPage() {
   const [sec, setSec] = useState(security);
   const [password, setPassword] = useState({ current: "", next: "" });
   const [apiState, setApiState] = useState(api);
+  const [showSecret, setShowSecret] = useState(false);
 
-  const commit = <T,>(saver: (v: T) => void, value: T, label = "Saved") => {
-    saver(value);
-    toast.success(label);
+  const [genErrors, setGenErrors] = useState<Record<string, string>>({});
+  const [secErrors, setSecErrors] = useState<Record<string, string>>({});
+  const [apiErrors, setApiErrors] = useState<Record<string, string>>({});
+
+  const saveGen = () => {
+    const err: Record<string, string> = {};
+    if (!gen.workspaceName.trim()) err.workspaceName = "Required";
+    if (!URL_RE.test(gen.website)) err.website = "Must start with http(s)://";
+    setGenErrors(err);
+    if (Object.keys(err).length) return;
+    saveGeneral(gen);
+    log("update", "General settings saved");
+    toast.success("Saved");
+  };
+
+  const saveApp = () => {
+    saveAppearance(app);
+    log("update", "Appearance saved");
+    toast.success("Saved");
+  };
+
+  const saveNotif = () => {
+    saveNotifications(notif);
+    log("update", "Notification preferences saved");
+    toast.success("Saved");
+  };
+
+  const saveSec = () => {
+    const err: Record<string, string> = {};
+    if (password.current || password.next) {
+      if (password.current.length < 8) err.current = "Enter your current password";
+      if (password.next.length < 8) err.next = "Use at least 8 characters";
+    }
+    setSecErrors(err);
+    if (Object.keys(err).length) return;
+    saveSecurity(sec);
+    setPassword({ current: "", next: "" });
+    log("update", "Security settings saved");
+    toast.success("Security updated");
+  };
+
+  const saveApiSettings = () => {
+    const err: Record<string, string> = {};
+    if (apiState.webhookEndpoint && !URL_RE.test(apiState.webhookEndpoint)) {
+      err.webhookEndpoint = "Must start with http(s)://";
+    }
+    setApiErrors(err);
+    if (Object.keys(err).length) return;
+    saveApi(apiState);
+    log("update", "API settings saved");
+    toast.success("Saved");
   };
 
   return (
@@ -64,16 +119,18 @@ function SettingsPage() {
 
         <TabsContent value="general" className="mt-6">
           <Card title="Workspace">
-            <FormRow label="Workspace name">
+            <FormRow label="Workspace name" error={genErrors.workspaceName}>
               <Input
                 value={gen.workspaceName}
                 onChange={(e) => setGen({ ...gen, workspaceName: e.target.value })}
+                maxLength={80}
               />
             </FormRow>
-            <FormRow label="Website">
+            <FormRow label="Website" error={genErrors.website}>
               <Input
                 value={gen.website}
                 onChange={(e) => setGen({ ...gen, website: e.target.value })}
+                placeholder="https://example.com"
               />
             </FormRow>
             <FormRow label="Language">
@@ -102,7 +159,7 @@ function SettingsPage() {
                 </SelectContent>
               </Select>
             </FormRow>
-            <SaveBar onSave={() => commit(saveGeneral, gen)} />
+            <SaveBar onSave={saveGen} />
           </Card>
         </TabsContent>
 
@@ -117,13 +174,12 @@ function SettingsPage() {
               />
             </FormRow>
             <FormRow label="Logo">
-              <Button variant="outline">Upload logo</Button>
+              <Button variant="outline" onClick={() => toast("Logo upload coming soon")}>
+                Upload logo
+              </Button>
             </FormRow>
             <FormRow label="Default widget theme">
-              <Select
-                value={app.widgetTheme}
-                onValueChange={(v) => setApp({ ...app, widgetTheme: v })}
-              >
+              <Select value={app.widgetTheme} onValueChange={(v) => setApp({ ...app, widgetTheme: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -134,89 +190,82 @@ function SettingsPage() {
                 </SelectContent>
               </Select>
             </FormRow>
-            <SaveBar onSave={() => commit(saveAppearance, app)} />
+            <SaveBar onSave={saveApp} />
           </Card>
         </TabsContent>
 
         <TabsContent value="notifications" className="mt-6">
           <Card title="Email & alerts">
-            <ToggleRow
-              label="Upload success"
-              checked={notif.uploadSuccess}
-              onChange={(v) => setNotif({ ...notif, uploadSuccess: v })}
-            />
-            <ToggleRow
-              label="Upload failed"
-              checked={notif.uploadFailed}
-              onChange={(v) => setNotif({ ...notif, uploadFailed: v })}
-            />
-            <ToggleRow
-              label="Billing alerts"
-              checked={notif.billingAlerts}
-              onChange={(v) => setNotif({ ...notif, billingAlerts: v })}
-            />
-            <ToggleRow
-              label="Weekly performance digest"
-              checked={notif.weeklyDigest}
-              onChange={(v) => setNotif({ ...notif, weeklyDigest: v })}
-            />
-            <ToggleRow
-              label="Product update newsletter"
-              checked={notif.productNewsletter}
-              onChange={(v) => setNotif({ ...notif, productNewsletter: v })}
-            />
-            <SaveBar onSave={() => commit(saveNotifications, notif)} />
+            <ToggleRow label="Upload success" checked={notif.uploadSuccess} onChange={(v) => setNotif({ ...notif, uploadSuccess: v })} />
+            <ToggleRow label="Upload failed" checked={notif.uploadFailed} onChange={(v) => setNotif({ ...notif, uploadFailed: v })} />
+            <ToggleRow label="Billing alerts" checked={notif.billingAlerts} onChange={(v) => setNotif({ ...notif, billingAlerts: v })} />
+            <ToggleRow label="Weekly performance digest" checked={notif.weeklyDigest} onChange={(v) => setNotif({ ...notif, weeklyDigest: v })} />
+            <ToggleRow label="Product update newsletter" checked={notif.productNewsletter} onChange={(v) => setNotif({ ...notif, productNewsletter: v })} />
+            <SaveBar onSave={saveNotif} />
           </Card>
         </TabsContent>
 
         <TabsContent value="security" className="mt-6">
           <Card title="Security">
-            <FormRow label="Current password">
+            <FormRow label="Current password" error={secErrors.current}>
               <Input
                 type="password"
                 value={password.current}
                 onChange={(e) => setPassword({ ...password, current: e.target.value })}
                 placeholder="••••••••"
+                autoComplete="current-password"
               />
             </FormRow>
-            <FormRow label="New password">
+            <FormRow label="New password" error={secErrors.next}>
               <Input
                 type="password"
                 value={password.next}
                 onChange={(e) => setPassword({ ...password, next: e.target.value })}
                 placeholder="••••••••"
+                autoComplete="new-password"
               />
             </FormRow>
-            <ToggleRow
-              label="Two-factor authentication"
-              checked={sec.twoFactor}
-              onChange={(v) => setSec({ ...sec, twoFactor: v })}
-            />
-            <ToggleRow
-              label="Require SSO for team members"
-              checked={sec.requireSso}
-              onChange={(v) => setSec({ ...sec, requireSso: v })}
-            />
-            <SaveBar
-              label="Update security"
-              onSave={() => {
-                saveSecurity(sec);
-                setPassword({ current: "", next: "" });
-                toast.success("Security updated");
-              }}
-            />
+            <ToggleRow label="Two-factor authentication" checked={sec.twoFactor} onChange={(v) => setSec({ ...sec, twoFactor: v })} />
+            <ToggleRow label="Require SSO for team members" checked={sec.requireSso} onChange={(v) => setSec({ ...sec, requireSso: v })} />
+            <SaveBar label="Update security" onSave={saveSec} />
           </Card>
         </TabsContent>
 
         <TabsContent value="api" className="mt-6">
           <Card title="API keys">
             <FormRow label="Publishable key">
-              <Input readOnly value={apiState.publishableKey} className="font-mono" />
+              <div className="flex gap-2">
+                <Input readOnly value={apiState.publishableKey} className="font-mono" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(apiState.publishableKey, { successMessage: "Publishable key copied" })}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </FormRow>
             <FormRow label="Secret key">
-              <Input readOnly value={apiState.secretKey} className="font-mono" />
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  type={showSecret ? "text" : "password"}
+                  value={apiState.secretKey}
+                  className="font-mono"
+                />
+                <Button variant="outline" size="icon" onClick={() => setShowSecret((v) => !v)}>
+                  {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(apiState.secretKey, { successMessage: "Secret copied" })}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </FormRow>
-            <FormRow label="Webhook endpoint">
+            <FormRow label="Webhook endpoint" error={apiErrors.webhookEndpoint}>
               <Input
                 value={apiState.webhookEndpoint}
                 onChange={(e) => setApiState({ ...apiState, webhookEndpoint: e.target.value })}
@@ -230,12 +279,13 @@ function SettingsPage() {
                   rotateKeys();
                   const next = useSettingsStore.getState().api;
                   setApiState(next);
+                  log("update", "API keys rotated");
                   toast.success("Keys rotated");
                 }}
               >
                 Rotate keys
               </Button>
-              <Button onClick={() => commit(saveApi, apiState)}>Save changes</Button>
+              <Button onClick={saveApiSettings}>Save changes</Button>
             </div>
           </Card>
         </TabsContent>
@@ -255,11 +305,22 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FormRow({
+  label,
+  children,
+  error,
+}: {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+}) {
   return (
     <div className="grid gap-1.5 sm:grid-cols-[220px_minmax(0,1fr)] sm:items-center sm:gap-4">
       <Label className="text-sm">{label}</Label>
-      <div>{children}</div>
+      <div>
+        {children}
+        {error && <div className="mt-1 text-xs text-destructive">{error}</div>}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Bell, Command, Search, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { notifications } from "@/lib/mock-data";
+import { useNotificationsStore } from "@/stores/notifications-store";
+import { useProfileStore } from "@/stores/profile-store";
+import { useUiStore } from "@/stores/ui-store";
 
 const labels: Record<string, string> = {
   "": "Dashboard",
@@ -36,7 +39,14 @@ const labels: Record<string, string> = {
 export function AppHeader() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const parts = pathname.split("/").filter(Boolean);
-  const unread = notifications.filter((n) => !n.read).length;
+  const items = useNotificationsStore((s) => s.items);
+  const markRead = useNotificationsStore((s) => s.markRead);
+  const profile = useProfileStore((s) => s.profile);
+  const setSearchOpen = useUiStore((s) => s.setSearchOpen);
+  const setUploadOpen = useUiStore((s) => s.setUploadVideoOpen);
+  const navigate = useNavigate();
+  const unread = items.filter((n) => !n.read).length;
+  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur">
@@ -63,18 +73,27 @@ export function AppHeader() {
       </nav>
 
       <div className="ml-auto flex items-center gap-1.5">
-        <div className="relative hidden md:block">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="relative hidden md:block"
+          aria-label="Open search"
+        >
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
+            readOnly
             placeholder="Search videos, products, widgets…"
-            className="h-9 w-[260px] pl-8 pr-16 text-sm lg:w-[340px]"
+            className="h-9 w-[260px] cursor-pointer pl-8 pr-16 text-sm lg:w-[340px]"
+            onFocus={(e) => {
+              e.target.blur();
+              setSearchOpen(true);
+            }}
           />
           <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:flex">
             <Command className="h-3 w-3" />K
           </kbd>
-        </div>
+        </button>
 
-        <Button size="sm" className="hidden gap-1.5 sm:inline-flex">
+        <Button size="sm" className="hidden gap-1.5 sm:inline-flex" onClick={() => setUploadOpen(true)}>
           <Upload className="h-3.5 w-3.5" />
           Upload
         </Button>
@@ -82,7 +101,7 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9">
+            <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
               <Bell className="h-4 w-4" />
               {unread > 0 && (
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-ember" />
@@ -97,8 +116,17 @@ export function AppHeader() {
               </Badge>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.slice(0, 5).map((n) => (
-              <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-0.5 py-2">
+            {items.length === 0 && (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                Nothing new right now.
+              </div>
+            )}
+            {items.slice(0, 5).map((n) => (
+              <DropdownMenuItem
+                key={n.id}
+                onClick={() => markRead(n.id)}
+                className="flex flex-col items-start gap-0.5 py-2"
+              >
                 <div className="flex w-full items-center justify-between">
                   <span className="text-sm font-medium">{n.title}</span>
                   <span className="text-[10px] text-muted-foreground">{n.time}</span>
@@ -117,15 +145,17 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="ml-1 flex items-center gap-2 rounded-md p-1 hover:bg-accent">
+            <button className="ml-1 flex items-center gap-2 rounded-md p-1 hover:bg-accent" aria-label="Account menu">
               <Avatar className="h-7 w-7">
-                <AvatarImage src="https://api.dicebear.com/9.x/notionists/svg?seed=founder" />
-                <AvatarFallback>MW</AvatarFallback>
+                <AvatarImage src={profile.avatarUrl} />
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Mira Wren</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {profile.firstName} {profile.lastName}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/profile">Profile</Link>
@@ -137,7 +167,14 @@ export function AppHeader() {
               <Link to="/billing">Billing</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Sign out</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                toast.success("Signed out");
+                navigate({ to: "/" });
+              }}
+            >
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

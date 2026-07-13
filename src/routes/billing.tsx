@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { PageShell, Stat } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { fmt, invoices } from "@/lib/mock-data";
+import { Switch } from "@/components/ui/switch";
+import { fmt, type Invoice } from "@/lib/mock-data";
 import {
   OVERAGE_BLOCK,
   OVERAGE_PRICE,
@@ -23,10 +24,28 @@ import {
   type PlanId,
   type Usage,
 } from "@/stores/billing-store";
+import { useInvoicesStore } from "@/stores/invoices-store";
+import { useUiStore } from "@/stores/ui-store";
+import { useActivityStore } from "@/stores/activity-store";
+import { useNotificationsStore } from "@/stores/notifications-store";
+import { downloadText } from "@/lib/mock-api";
+import { exportCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/billing")({
   component: BillingPage,
 });
+
+function invoiceText(inv: Invoice, planName: string) {
+  return [
+    `Videofy Invoice ${inv.number}`,
+    `Date: ${fmt.date(inv.date)}`,
+    `Plan: ${planName}`,
+    `Amount: ${fmt.money(inv.amount)}`,
+    `Status: ${inv.status.toUpperCase()}`,
+    `---`,
+    `Thank you for using Videofy.`,
+  ].join("\n");
+}
 
 function BillingPage() {
   const currentPlanId = useBillingStore((s) => s.currentPlanId);
@@ -38,6 +57,11 @@ function BillingPage() {
   const paymentLast4 = useBillingStore((s) => s.paymentLast4);
   const autoRenew = useBillingStore((s) => s.autoRenew);
   const setPlan = useBillingStore((s) => s.setPlan);
+  const setAutoRenew = useBillingStore((s) => s.setAutoRenew);
+  const openCard = useUiStore((s) => s.setUpdateCardOpen);
+  const log = useActivityStore((s) => s.log);
+  const notify = useNotificationsStore((s) => s.push);
+  const invoices = useInvoicesStore((s) => s.items);
 
   const usage = computeUsage(currentPlanId, usedThisMonth);
   const renewal = fmt.date(cycleEnd);
@@ -49,6 +73,12 @@ function BillingPage() {
     }
   };
 
+  const contactSales = () => {
+    if (typeof window !== "undefined") {
+      window.location.href = "mailto:sales@videofy.app?subject=Enterprise%20plan";
+    }
+  };
+
   return (
     <PageShell
       eyebrow="Account"
@@ -56,7 +86,7 @@ function BillingPage() {
       description="Videofy bills by monthly widget impressions. Widgets keep running past your limit — overage is metered automatically."
       actions={
         <>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={contactSales}>
             Contact sales
           </Button>
           <Button size="sm" onClick={scrollToPlans}>
@@ -110,6 +140,12 @@ function BillingPage() {
           const to = plans.find((p) => p.id === id)!;
           setPlan(id);
           const direction = to.price > from.price ? "Upgraded" : "Switched";
+          log("billing", `${direction} to ${to.name}`);
+          notify({
+            kind: "success",
+            title: `${direction} to ${to.name}`,
+            body: `You now get ${fmt.n(to.impressions)} impressions per month.`,
+          });
           toast.success(`${direction} to ${to.name}`);
         }}
       />
@@ -119,9 +155,36 @@ function BillingPage() {
         paymentBrand={paymentBrand}
         paymentLast4={paymentLast4}
         autoRenew={autoRenew}
+        onUpdateCard={() => openCard(true)}
+        onToggleAutoRenew={(v) => {
+          setAutoRenew(v);
+          log("billing", v ? "Auto-renew enabled" : "Auto-renew disabled");
+          toast.success(v ? "Auto-renew enabled" : "Auto-renew disabled");
+        }}
       />
 
-      <InvoicesSection />
+      <InvoicesSection
+        invoices={invoices}
+        onDownload={(inv) => {
+          downloadText(`${inv.number}.txt`, invoiceText(inv, inv.plan));
+          log("export", "Invoice downloaded", inv.number);
+          toast.success(`Downloaded ${inv.number}`);
+        }}
+        onDownloadAll={() => {
+          exportCsv(
+            "invoices",
+            invoices.map((i) => ({
+              number: i.number,
+              date: i.date,
+              plan: i.plan,
+              amount: i.amount,
+              status: i.status,
+            })),
+          );
+          log("export", "All invoices exported");
+          toast.success("Invoice history CSV downloaded");
+        }}
+      />
     </PageShell>
   );
 }
@@ -141,7 +204,6 @@ function HardLimitBanner({ onUpgrade }: { onUpgrade: () => void }) {
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button size="sm" onClick={onUpgrade}>Upgrade plan</Button>
-            <Button size="sm" variant="outline">View billing</Button>
           </div>
         </div>
       </div>
@@ -374,11 +436,15 @@ function BillingDetailsSection({
   paymentBrand,
   paymentLast4,
   autoRenew,
+  onUpdateCard,
+  onToggleAutoRenew,
 }: {
   renewal: string;
   paymentBrand: string;
   paymentLast4: string;
   autoRenew: boolean;
+  onUpdateCard: () => void;
+  onToggleAutoRenew: (v: boolean) => void;
 }) {
   return (
     <section className="grid gap-4 lg:grid-cols-2">
@@ -391,10 +457,14 @@ function BillingDetailsSection({
         </div>
         <div className="mt-4 flex items-center justify-between rounded-lg border bg-background/40 px-4 py-3">
           <div>
-            <div className="text-sm font-medium">{paymentBrand} •••• {paymentLast4}</div>
+            <div className="text-sm font-medium">
+              {paymentBrand} •••• {paymentLast4}
+            </div>
             <div className="text-xs text-muted-foreground">Expires 08 / 2028</div>
           </div>
-          <Button size="sm" variant="outline">Update</Button>
+          <Button size="sm" variant="outline" onClick={onUpdateCard}>
+            Update
+          </Button>
         </div>
       </div>
       <div className="rounded-xl border bg-card p-6">
@@ -412,20 +482,30 @@ function BillingDetailsSection({
           <dt className="text-muted-foreground">Currency</dt>
           <dd className="text-right">USD</dd>
           <dt className="text-muted-foreground">Auto-renew</dt>
-          <dd className="text-right">{autoRenew ? "Enabled" : "Disabled"}</dd>
+          <dd className="flex items-center justify-end">
+            <Switch checked={autoRenew} onCheckedChange={onToggleAutoRenew} />
+          </dd>
         </dl>
       </div>
     </section>
   );
 }
 
-function InvoicesSection() {
+function InvoicesSection({
+  invoices,
+  onDownload,
+  onDownloadAll,
+}: {
+  invoices: Invoice[];
+  onDownload: (inv: Invoice) => void;
+  onDownloadAll: () => void;
+}) {
   return (
     <section className="rounded-xl border bg-card">
       <div className="flex items-center justify-between border-b p-5">
         <h3 className="font-display text-xl">Billing history</h3>
-        <Button variant="outline" size="sm">
-          <Download className="mr-1.5 h-3.5 w-3.5" /> All PDFs
+        <Button variant="outline" size="sm" onClick={onDownloadAll}>
+          <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
         </Button>
       </div>
       <table className="w-full text-sm">
@@ -455,7 +535,7 @@ function InvoicesSection() {
                 </Badge>
               </td>
               <td className="px-5 py-3 text-right">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => onDownload(inv)} aria-label="Download invoice">
                   <Download className="h-3.5 w-3.5" />
                 </Button>
               </td>
