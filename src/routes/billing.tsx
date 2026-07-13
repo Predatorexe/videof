@@ -213,9 +213,9 @@ function HardLimitBanner({ onUpgrade }: { onUpgrade: () => void }) {
 
 function OverageBanner({ overage, charge }: { overage: number; charge: number }) {
   return (
-    <div className="rounded-xl border border-signal/30 bg-signal/5 p-4">
+    <div className="rounded-xl border border-[color:var(--ember)]/40 bg-[color:var(--ember)]/10 p-4">
       <div className="flex items-start gap-3">
-        <div className="icon-tile shrink-0 bg-signal/10 text-signal">
+        <div className="icon-tile shrink-0 bg-[color:var(--ember)]/15 text-[color:var(--ember)]">
           <Info className="h-4 w-4" />
         </div>
         <div className="flex-1 text-sm">

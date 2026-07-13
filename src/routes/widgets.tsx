@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { fmt, type WidgetType } from "@/lib/mock-data";
 import { useWidgetsStore } from "@/stores/widgets-store";
+import { useVideosStore } from "@/stores/videos-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useActivityStore } from "@/stores/activity-store";
 
@@ -64,6 +65,8 @@ const typeIcon: Record<WidgetType, React.ComponentType<{ className?: string }>> 
 
 function WidgetsPage() {
   const items = useWidgetsStore((s) => s.items);
+  const settingsMap = useWidgetsStore((s) => s.settings);
+  const videos = useVideosStore((s) => s.items);
   const toggle = useWidgetsStore((s) => s.toggle);
   const duplicate = useWidgetsStore((s) => s.duplicate);
   const remove = useWidgetsStore((s) => s.remove);
@@ -123,10 +126,28 @@ function WidgetsPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((w) => {
             const Icon = typeIcon[w.type];
+            const ws = settingsMap[w.id];
+            const firstVideoId = ws?.videoIds?.[0];
+            const thumb = firstVideoId
+              ? videos.find((v) => v.id === firstVideoId)?.thumbnail
+              : videos[0]?.thumbnail;
             return (
               <div key={w.id} className="group relative overflow-hidden rounded-xl border bg-card">
                 <div className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-gradient-to-br from-muted to-elevated">
-                  <Icon className="h-16 w-16 text-muted-foreground/40" />
+                  {thumb ? (
+                    <>
+                      <img
+                        src={thumb}
+                        alt=""
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                      <Icon className="relative h-10 w-10 text-white/80 drop-shadow-lg" />
+                    </>
+                  ) : (
+                    <Icon className="h-16 w-16 text-muted-foreground/40" />
+                  )}
                   <div className="absolute left-3 top-3">
                     <Badge variant="secondary" className="capitalize">
                       {w.type}
