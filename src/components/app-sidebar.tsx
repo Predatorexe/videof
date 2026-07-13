@@ -15,6 +15,10 @@ import {
   Plus,
 } from "lucide-react";
 
+import { fmt } from "@/lib/mock-data";
+import { computeUsage, useBillingStore } from "@/stores/billing-store";
+import { useProfileStore } from "@/stores/profile-store";
+
 import {
   Sidebar,
   SidebarContent,
@@ -55,6 +59,18 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
+
+  const currentPlanId = useBillingStore((s) => s.currentPlanId);
+  const usedThisMonth = useBillingStore((s) => s.usedThisMonth);
+  const cycleEnd = useBillingStore((s) => s.cycleEnd);
+  const usage = computeUsage(currentPlanId, usedThisMonth);
+  const profile = useProfileStore((s) => s.profile);
+  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+  const resetLabel = new Date(cycleEnd).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const barPct = Math.min(usage.pct, 100);
 
   return (
     <Sidebar collapsible="icon">
