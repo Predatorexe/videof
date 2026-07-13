@@ -24,7 +24,7 @@ function MediaLibrary() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {videos.map((v, i) => (
           <div key={v.id} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
-            <img
+            <img loading="lazy" decoding="async"
               src={v.thumbnail}
               alt=""
               className="h-full w-full object-cover transition group-hover:scale-105"
