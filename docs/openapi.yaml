@@ -1,0 +1,1628 @@
+openapi: 3.1.0
+info:
+  title: Videofy API
+  version: "1.0.0"
+  description: |
+    Video commerce platform API. Two surfaces:
+
+    * Public HTTP routes under `/api/public/*` — stable and versionless.
+    * TanStack Start server functions under `POST /_serverFn/{id}` — the
+      admin UI's internal RPC. Invoke via `useServerFn`, not by hand;
+      the wire format is TanStack's RPC serialization.
+
+    See `docs/API.md` for conventions.
+  contact:
+    name: Videofy
+    url: https://videof.lovable.app
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://videof.lovable.app
+    description: Production
+  - url: https://project--{projectId}-dev.lovable.app
+    description: Preview (stable per project)
+    variables:
+      projectId:
+        default: 7feba8cc-051c-4099-a617-251ef709612c
+
+tags:
+  - name: Health
+  - name: Widget Runtime
+  - name: Analytics Ingestion
+  - name: Shopify Webhooks
+  - name: Server Functions — Videos
+  - name: Server Functions — Widgets
+  - name: Server Functions — Products
+  - name: Server Functions — Collections
+  - name: Server Functions — Customers
+  - name: Server Functions — Analytics
+  - name: Server Functions — Billing
+  - name: Server Functions — Notifications
+  - name: Server Functions — Settings
+  - name: Server Functions — Profile
+  - name: Server Functions — Media
+
+security: []
+
+# =========================================================
+# Reusable components
+# =========================================================
+components:
+  securitySchemes:
+    SupabaseBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Supabase session access token, attached automatically by the
+        client `functionMiddleware` in `src/start.ts`. Required for every
+        `POST /_serverFn/*` endpoint.
+    ShopifyHmac:
+      type: apiKey
+      in: header
+      name: X-Shopify-Hmac-Sha256
+      description: |
+        HMAC-SHA256 of the raw request body, base64-encoded, using the
+        shared `SHOPIFY_WEBHOOK_SECRET`. Timing-safe compared server-side.
+
+  parameters:
+    ShopId:
+      name: shopId
+      in: query
+      required: true
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Search:
+      name: search
+      in: query
+      required: false
+      schema: { type: string, maxLength: 200 }
+    Sort:
+      name: sort
+      in: query
+      required: false
+      schema: { type: string, maxLength: 64 }
+    Order:
+      name: order
+      in: query
+      required: false
+      schema: { type: string, enum: [asc, desc] }
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+
+    ISODate:
+      type: string
+      pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+
+    ErrorDTO:
+      type: object
+      required: [status, code, message]
+      properties:
+        status:
+          type: integer
+          examples: [404]
+        code:
+          type: string
+          enum:
+            - bad_request
+            - unauthorized
+            - forbidden
+            - not_found
+            - conflict
+            - unprocessable
+            - rate_limited
+            - internal_error
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean, const: true }
+
+    Pagination:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items: {}
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+
+    ListQuery:
+      type: object
+      properties:
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        search: { type: string, maxLength: 200 }
+        sort: { type: string, maxLength: 64 }
+        order: { type: string, enum: [asc, desc] }
+        filters:
+          type: object
+          additionalProperties:
+            oneOf:
+              - { type: string }
+              - { type: number }
+              - { type: boolean }
+              - { type: "null" }
+
+    # ---------- Health ----------
+    HealthCheck:
+      type: object
+      required: [name, status]
+      properties:
+        name: { type: string }
+        status: { type: string, enum: [ok, degraded, down, skipped] }
+        latencyMs: { type: integer, minimum: 0 }
+        error: { type: string }
+    HealthResponse:
+      type: object
+      required: [status, uptimeMs, timestamp, version, environment, checks]
+      properties:
+        status: { type: string, enum: [ok, degraded, down] }
+        uptimeMs: { type: integer, minimum: 0 }
+        timestamp: { type: string, format: date-time }
+        version: { type: string }
+        environment: { type: string }
+        checks:
+          type: array
+          items: { $ref: "#/components/schemas/HealthCheck" }
+
+    # ---------- Analytics ingestion ----------
+    AnalyticsEvent:
+      type: object
+      required: [shopId, eventType]
+      properties:
+        shopId: { $ref: "#/components/schemas/UUID" }
+        widgetId: { $ref: "#/components/schemas/UUID" }
+        videoId: { $ref: "#/components/schemas/UUID" }
+        productId: { $ref: "#/components/schemas/UUID" }
+        eventType:
+          type: string
+          enum:
+            - impression
+            - view
+            - video_start
+            - video_complete
+            - cta_click
+            - add_to_cart
+            - buy_now
+            - order
+            - engagement
+        sessionId: { type: string, maxLength: 120 }
+        customerId: { type: string, maxLength: 120 }
+        amount: { type: number, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        metadata:
+          type: object
+          additionalProperties: true
+    AnalyticsBatch:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items: { $ref: "#/components/schemas/AnalyticsEvent" }
+    AnalyticsIngestResult:
+      type: object
+      required: [inserted]
+      properties:
+        inserted: { type: integer, minimum: 0 }
+        rejected: { type: integer, minimum: 0 }
+
+    # ---------- Widget runtime ----------
+    WidgetType:
+      type: string
+      enum:
+        - homepage_carousel
+        - story
+        - floating
+        - product
+        - collection
+        - popup
+        - hero
+        - grid
+        - instagram_feed
+        - tiktok_feed
+    WidgetVideo:
+      type: object
+      properties:
+        position: { type: integer, minimum: 0 }
+        video:
+          type: object
+          properties:
+            id: { $ref: "#/components/schemas/UUID" }
+            title: { type: string }
+            hls_url: { type: string, format: uri }
+            mp4_url: { type: string, format: uri }
+            poster_url: { type: string, format: uri }
+            thumbnail_url: { type: string, format: uri }
+            duration_seconds: { type: number, minimum: 0 }
+    WidgetPublic:
+      type: object
+      required: [id, shop_id, type, status, config]
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        type: { $ref: "#/components/schemas/WidgetType" }
+        name: { type: string }
+        handle: { type: string }
+        status: { type: string, enum: [published] }
+        config:
+          type: object
+          additionalProperties: true
+        custom_css: { type: string, nullable: true }
+        published_version_id:
+          oneOf:
+            - { $ref: "#/components/schemas/UUID" }
+            - { type: "null" }
+    WidgetPublicResponse:
+      type: object
+      required: [widget, videos]
+      properties:
+        widget: { $ref: "#/components/schemas/WidgetPublic" }
+        videos:
+          type: array
+          items: { $ref: "#/components/schemas/WidgetVideo" }
+
+    # ---------- Domain entities (server-fn responses) ----------
+    Video:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        source_url: { type: string, format: uri, nullable: true }
+        hls_url: { type: string, format: uri, nullable: true }
+        mp4_url: { type: string, format: uri, nullable: true }
+        poster_url: { type: string, format: uri, nullable: true }
+        thumbnail_url: { type: string, format: uri, nullable: true }
+        duration_seconds: { type: number, nullable: true }
+        status: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Widget:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        type: { $ref: "#/components/schemas/WidgetType" }
+        name: { type: string }
+        handle: { type: string }
+        status: { type: string, enum: [draft, published, archived] }
+        config:
+          type: object
+          additionalProperties: true
+        custom_css: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Product:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        shopify_product_id: { type: string }
+        title: { type: string }
+        handle: { type: string, nullable: true }
+        vendor: { type: string, nullable: true }
+        product_type: { type: string, nullable: true }
+        status: { type: string, enum: [active, draft, archived] }
+        price_min: { type: number, nullable: true }
+        price_max: { type: number, nullable: true }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        image_url: { type: string, format: uri, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+    Collection:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        title: { type: string }
+        handle: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        image_url: { type: string, format: uri, nullable: true }
+    Customer:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        email: { type: string, format: email, nullable: true }
+        first_name: { type: string, nullable: true }
+        last_name: { type: string, nullable: true }
+    Notification:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        user_id: { $ref: "#/components/schemas/UUID" }
+        kind: { type: string, enum: [info, success, warning, error] }
+        title: { type: string }
+        body: { type: string, nullable: true }
+        link: { type: string, format: uri, nullable: true }
+        read_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+    Profile:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        full_name: { type: string, nullable: true }
+        avatar_url: { type: string, format: uri, nullable: true }
+        locale: { type: string, nullable: true }
+    ShopSettings:
+      type: object
+      properties:
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        brand_color: { type: string, pattern: "^#[0-9a-fA-F]{6}$", nullable: true }
+        accent_color: { type: string, pattern: "^#[0-9a-fA-F]{6}$", nullable: true }
+        default_language: { type: string, nullable: true }
+        analytics_enabled: { type: boolean }
+        storefront_domain: { type: string, nullable: true }
+        data:
+          type: object
+          additionalProperties: true
+    MediaAsset:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        kind: { type: string, enum: [video, image, thumbnail, poster] }
+        provider: { type: string }
+        url: { type: string, format: uri }
+        width: { type: integer, nullable: true }
+        height: { type: integer, nullable: true }
+        size_bytes: { type: integer, nullable: true }
+    Subscription:
+      type: object
+      properties:
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        plan: { type: string, enum: [starter, growth, scale, enterprise] }
+        impression_limit: { type: integer, minimum: 0 }
+        status: { type: string }
+    Invoice:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        shop_id: { $ref: "#/components/schemas/UUID" }
+        amount: { type: number, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string }
+        issued_at: { type: string, format: date-time }
+    PlanLimits:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          impressions: { type: integer, minimum: 0 }
+          price: { type: number, minimum: 0 }
+    UploadTicket:
+      type: object
+      required: [uploadUrl, method, assetId, provider]
+      properties:
+        uploadUrl: { type: string, format: uri }
+        method: { type: string, enum: [POST, PUT] }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        assetId: { type: string }
+        provider: { type: string }
+    AnalyticsSummary:
+      type: object
+      properties:
+        totals:
+          type: object
+          additionalProperties: { type: number }
+        daily:
+          type: array
+          items:
+            type: object
+            properties:
+              day: { type: string, format: date }
+              impressions: { type: integer, minimum: 0 }
+              views: { type: integer, minimum: 0 }
+              revenue: { type: number, minimum: 0 }
+
+    # ---------- Server-fn envelopes ----------
+    ServerFnInput:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+
+    # ---------- Shopify webhook envelope ----------
+    ShopifyWebhookEnvelope:
+      description: |
+        The webhook body IS the resource payload — Shopify does not wrap
+        it. Each topic has its own object shape; validated by the route
+        handler. The `X-Shopify-Topic` and `X-Shopify-Shop-Domain`
+        headers are required.
+      type: object
+      additionalProperties: true
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorDTO" }
+    Forbidden:
+      description: Authenticated but not permitted for this shop
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorDTO" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorDTO" }
+    Unprocessable:
+      description: Zod validation failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorDTO" }
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorDTO" }
+    InternalError:
+      description: Unhandled server error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorDTO" }
+
+# =========================================================
+# Paths
+# =========================================================
+paths:
+  # ------------- HEALTH -------------
+  /api/public/health:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      description: Returns per-check status. `503` when any dependency is `down`.
+      security: []
+      responses:
+        "200":
+          description: All checks pass
+          headers:
+            Cache-Control: { schema: { type: string, const: "no-store, max-age=0" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+        "503":
+          description: One or more checks failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+    head:
+      tags: [Health]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200": { description: Alive }
+
+  # ------------- ANALYTICS INGESTION -------------
+  /api/public/analytics/track:
+    post:
+      tags: [Analytics Ingestion]
+      summary: Storefront analytics ingestion (public, rate-limited)
+      security: []
+      description: |
+        Called by the Theme App Extension loader with `navigator.sendBeacon`.
+        Rate-limited to **120 requests / 60 s per IP**.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnalyticsBatch" }
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyticsIngestResult" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    options:
+      tags: [Analytics Ingestion]
+      summary: CORS preflight
+      security: []
+      responses:
+        "204": { description: No content }
+
+  # ------------- WIDGET RUNTIME -------------
+  /api/public/widget/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/UUID" }
+    get:
+      tags: [Widget Runtime]
+      summary: Fetch public widget config
+      security: []
+      description: |
+        Returns the published widget config for the storefront runtime.
+        Edge-cached for 60 s. Only `status = published` widgets are
+        returned; others produce `404`.
+      responses:
+        "200":
+          description: Widget found
+          headers:
+            Cache-Control: { schema: { type: string, const: "public, max-age=60, s-maxage=60" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WidgetPublicResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    options:
+      tags: [Widget Runtime]
+      summary: CORS preflight
+      security: []
+      responses:
+        "204": { description: No content }
+
+  # ------------- SHOPIFY WEBHOOKS -------------
+  /api/public/shopify/webhooks/products-update:
+    post:
+      tags: [Shopify Webhooks]
+      summary: products/update
+      security: [{ ShopifyHmac: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShopifyWebhookEnvelope" }
+      responses:
+        "200": { description: Processed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/public/shopify/webhooks/collections-update:
+    post:
+      tags: [Shopify Webhooks]
+      summary: collections/update
+      security: [{ ShopifyHmac: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShopifyWebhookEnvelope" }
+      responses:
+        "200": { description: Processed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/public/shopify/webhooks/app-uninstalled:
+    post:
+      tags: [Shopify Webhooks]
+      summary: app/uninstalled
+      security: [{ ShopifyHmac: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShopifyWebhookEnvelope" }
+      responses:
+        "200": { description: Processed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/public/shopify/webhooks/customers-data-request:
+    post:
+      tags: [Shopify Webhooks]
+      summary: customers/data_request (GDPR)
+      security: [{ ShopifyHmac: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShopifyWebhookEnvelope" }
+      responses:
+        "200": { description: Processed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/public/shopify/webhooks/customers-redact:
+    post:
+      tags: [Shopify Webhooks]
+      summary: customers/redact (GDPR)
+      security: [{ ShopifyHmac: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShopifyWebhookEnvelope" }
+      responses:
+        "200": { description: Processed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/public/shopify/webhooks/shop-redact:
+    post:
+      tags: [Shopify Webhooks]
+      summary: shop/redact (GDPR)
+      security: [{ ShopifyHmac: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShopifyWebhookEnvelope" }
+      responses:
+        "200": { description: Processed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ------------- SERVER FUNCTIONS (Videos) -------------
+  /_serverFn/videos.listVideos:
+    post:
+      tags: [Server Functions — Videos]
+      summary: List videos (paginated)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  allOf:
+                    - $ref: "#/components/schemas/ListQuery"
+                    - type: object
+                      required: [shopId]
+                      properties:
+                        shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Page of videos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Pagination"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/Video" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /_serverFn/videos.initiateVideoUpload:
+    post:
+      tags: [Server Functions — Videos]
+      summary: Create video row + presigned upload ticket
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, title, filename, contentType, size]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    title: { type: string, minLength: 1, maxLength: 200 }
+                    description: { type: string, maxLength: 2000 }
+                    tags:
+                      type: array
+                      maxItems: 50
+                      items: { type: string, maxLength: 40 }
+                    filename: { type: string, minLength: 1, maxLength: 300 }
+                    contentType: { type: string, minLength: 3, maxLength: 120 }
+                    size: { type: integer, minimum: 1, maximum: 5000000000 }
+      responses:
+        "200":
+          description: Upload ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  video: { $ref: "#/components/schemas/Video" }
+                  ticket: { $ref: "#/components/schemas/UploadTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /_serverFn/videos.finalizeVideoUpload:
+    post:
+      tags: [Server Functions — Videos]
+      summary: Mark upload complete and sync from provider
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Updated video
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /_serverFn/videos.updateVideo:
+    post:
+      tags: [Server Functions — Videos]
+      summary: Update video metadata
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+                    title: { type: string, minLength: 1, maxLength: 200 }
+                    description: { type: string, maxLength: 2000 }
+                    tags:
+                      type: array
+                      maxItems: 50
+                      items: { type: string, maxLength: 40 }
+      responses:
+        "200":
+          description: Updated video
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /_serverFn/videos.deleteVideo:
+    post:
+      tags: [Server Functions — Videos]
+      summary: Delete video (and provider asset)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ------------- SERVER FUNCTIONS (Widgets) -------------
+  /_serverFn/widgets.listWidgets:
+    post:
+      tags: [Server Functions — Widgets]
+      summary: List widgets for a shop
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Widgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Widget" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /_serverFn/widgets.getWidget:
+    post:
+      tags: [Server Functions — Widgets]
+      summary: Get widget by id (with attached videos)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Widget or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Widget"
+                  - type: "null"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /_serverFn/widgets.createWidget:
+    post:
+      tags: [Server Functions — Widgets]
+      summary: Create widget
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, type, name, handle]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    type: { $ref: "#/components/schemas/WidgetType" }
+                    name: { type: string, minLength: 1, maxLength: 120 }
+                    handle:
+                      type: string
+                      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                      minLength: 1
+                      maxLength: 120
+                    config:
+                      type: object
+                      additionalProperties: true
+                    customCss: { type: string, maxLength: 50000 }
+      responses:
+        "200":
+          description: Created widget
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Widget" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /_serverFn/widgets.updateWidget:
+    post:
+      tags: [Server Functions — Widgets]
+      summary: Update widget
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+                    name: { type: string, minLength: 1, maxLength: 120 }
+                    handle:
+                      type: string
+                      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                    config:
+                      type: object
+                      additionalProperties: true
+                    customCss: { type: string, maxLength: 50000 }
+      responses:
+        "200":
+          description: Updated widget
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Widget" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /_serverFn/widgets.publishWidget:
+    post:
+      tags: [Server Functions — Widgets]
+      summary: Publish widget (snapshot current config as a version)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Published widget
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Widget" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ------------- SERVER FUNCTIONS (Products) -------------
+  /_serverFn/products.listProducts:
+    post:
+      tags: [Server Functions — Products]
+      summary: List products (paginated)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  allOf:
+                    - $ref: "#/components/schemas/ListQuery"
+                    - type: object
+                      required: [shopId]
+                      properties:
+                        shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Page of products
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Pagination"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/Product" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /_serverFn/products.upsertProduct:
+    post:
+      tags: [Server Functions — Products]
+      summary: Upsert product by (shopId, shopifyProductId)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, shopifyProductId, title]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    shopifyProductId: { type: string, minLength: 1 }
+                    title: { type: string, minLength: 1, maxLength: 200 }
+                    handle: { type: string, maxLength: 200 }
+                    description: { type: string, maxLength: 10000 }
+                    vendor: { type: string, maxLength: 120 }
+                    productType: { type: string, maxLength: 120 }
+                    status: { type: string, enum: [active, draft, archived] }
+                    priceMin: { type: number, minimum: 0 }
+                    priceMax: { type: number, minimum: 0 }
+                    currency: { type: string, minLength: 3, maxLength: 3 }
+                    imageUrl: { type: string, format: uri }
+                    tags:
+                      type: array
+                      items: { type: string }
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /_serverFn/products.deleteProduct:
+    post:
+      tags: [Server Functions — Products]
+      summary: Delete product
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+
+  # ------------- SERVER FUNCTIONS (Collections) -------------
+  /_serverFn/collections.listCollections:
+    post:
+      tags: [Server Functions — Collections]
+      summary: List collections
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Collection" }
+
+  /_serverFn/collections.createCollection:
+    post:
+      tags: [Server Functions — Collections]
+      summary: Create collection
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, title]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    title: { type: string, minLength: 1, maxLength: 200 }
+                    handle: { type: string, maxLength: 200 }
+                    description: { type: string, maxLength: 10000 }
+                    imageUrl: { type: string, format: uri }
+      responses:
+        "200":
+          description: Created collection
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Collection" }
+
+  /_serverFn/collections.assignProductsToCollection:
+    post:
+      tags: [Server Functions — Collections]
+      summary: Attach products to collection (upsert with positions)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [collectionId, productIds]
+                  properties:
+                    collectionId: { $ref: "#/components/schemas/UUID" }
+                    productIds:
+                      type: array
+                      minItems: 1
+                      maxItems: 500
+                      items: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  count: { type: integer, minimum: 1 }
+
+  /_serverFn/collections.deleteCollection:
+    post:
+      tags: [Server Functions — Collections]
+      summary: Delete collection
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+
+  # ------------- SERVER FUNCTIONS (Customers) -------------
+  /_serverFn/customers.listCustomers:
+    post:
+      tags: [Server Functions — Customers]
+      summary: List customers (paginated, search)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  allOf:
+                    - $ref: "#/components/schemas/ListQuery"
+                    - type: object
+                      required: [shopId]
+                      properties:
+                        shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Page of customers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Pagination"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/Customer" }
+
+  /_serverFn/customers.getCustomer:
+    post:
+      tags: [Server Functions — Customers]
+      summary: Get customer by id
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Customer or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Customer"
+                  - type: "null"
+
+  # ------------- SERVER FUNCTIONS (Analytics) -------------
+  /_serverFn/analytics.getAnalyticsSummary:
+    post:
+      tags: [Server Functions — Analytics]
+      summary: Rollup summary for a date range
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, fromDay, toDay]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    fromDay: { $ref: "#/components/schemas/ISODate" }
+                    toDay: { $ref: "#/components/schemas/ISODate" }
+      responses:
+        "200":
+          description: Aggregated metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnalyticsSummary" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /_serverFn/analytics.listRecentEvents:
+    post:
+      tags: [Server Functions — Analytics]
+      summary: Latest raw events (max 500)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    limit: { type: integer, minimum: 1, maximum: 500, default: 100 }
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AnalyticsEvent" }
+
+  # ------------- SERVER FUNCTIONS (Billing) -------------
+  /_serverFn/billing.getBillingOverview:
+    post:
+      tags: [Server Functions — Billing]
+      summary: Subscription + invoices + plan limits
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Billing overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription: { $ref: "#/components/schemas/Subscription" }
+                  invoices:
+                    type: array
+                    items: { $ref: "#/components/schemas/Invoice" }
+                  plans: { $ref: "#/components/schemas/PlanLimits" }
+
+  /_serverFn/billing.initiatePlanChange:
+    post:
+      tags: [Server Functions — Billing]
+      summary: Change plan (returns Shopify confirmation URL when configured)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, plan]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    plan:
+                      type: string
+                      enum: [starter, growth, scale, enterprise]
+      responses:
+        "200":
+          description: Updated subscription
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription: { $ref: "#/components/schemas/Subscription" }
+                  confirmationUrl:
+                    oneOf:
+                      - { type: string, format: uri }
+                      - { type: "null" }
+
+  # ------------- SERVER FUNCTIONS (Notifications) -------------
+  /_serverFn/notifications.listNotifications:
+    post:
+      tags: [Server Functions — Notifications]
+      summary: List notifications (limit 200)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    limit: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Notification" }
+
+  /_serverFn/notifications.markNotificationRead:
+    post:
+      tags: [Server Functions — Notifications]
+      summary: Mark notification as read
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+
+  /_serverFn/notifications.createNotification:
+    post:
+      tags: [Server Functions — Notifications]
+      summary: Create notification (requires shop access)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId, title]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    userId: { $ref: "#/components/schemas/UUID" }
+                    kind:
+                      type: string
+                      enum: [info, success, warning, error]
+                      default: info
+                    title: { type: string, minLength: 1, maxLength: 200 }
+                    body: { type: string, maxLength: 2000 }
+                    link: { type: string, format: uri }
+      responses:
+        "200":
+          description: Created notification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------- SERVER FUNCTIONS (Settings) -------------
+  /_serverFn/settings.getSettings:
+    post:
+      tags: [Server Functions — Settings]
+      summary: Get shop settings
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Settings or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ShopSettings"
+                  - type: "null"
+
+  /_serverFn/settings.updateSettings:
+    post:
+      tags: [Server Functions — Settings]
+      summary: Upsert shop settings
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    brandColor: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+                    accentColor: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+                    defaultLanguage: { type: string, maxLength: 10 }
+                    analyticsEnabled: { type: boolean }
+                    storefrontDomain: { type: string, maxLength: 255 }
+                    data:
+                      type: object
+                      additionalProperties: true
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ShopSettings" }
+
+  # ------------- SERVER FUNCTIONS (Profile) -------------
+  /_serverFn/profile.getProfile:
+    post:
+      tags: [Server Functions — Profile]
+      summary: Get current user profile
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+      responses:
+        "200":
+          description: Profile or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Profile"
+                  - type: "null"
+
+  /_serverFn/profile.updateProfile:
+    post:
+      tags: [Server Functions — Profile]
+      summary: Upsert current user profile
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    fullName: { type: string, maxLength: 160 }
+                    avatarUrl: { type: string, format: uri }
+                    locale: { type: string, maxLength: 10 }
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+
+  # ------------- SERVER FUNCTIONS (Media) -------------
+  /_serverFn/media.listMedia:
+    post:
+      tags: [Server Functions — Media]
+      summary: List media assets (optional kind filter)
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [shopId]
+                  properties:
+                    shopId: { $ref: "#/components/schemas/UUID" }
+                    kind:
+                      type: string
+                      enum: [video, image, thumbnail, poster]
+      responses:
+        "200":
+          description: Media
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MediaAsset" }
+
+  /_serverFn/media.deleteMedia:
+    post:
+      tags: [Server Functions — Media]
+      summary: Delete media asset
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
