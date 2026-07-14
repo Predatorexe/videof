@@ -1,0 +1,5 @@
+{%- comment -%} Inlines the loader once per page. {%- endcomment -%}
+{% unless request.design_mode %}
+  <script src="{{ 'videofy-loader.js' | asset_url }}" defer></script>
+  <link rel="stylesheet" href="{{ 'videofy.css' | asset_url }}">
+{% endunless %}

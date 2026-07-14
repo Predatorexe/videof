@@ -24,6 +24,14 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WidgetsIdRouteImport } from './routes/widgets.$id'
 import { Route as WidgetPreviewIdRouteImport } from './routes/widget-preview.$id'
+import { Route as ApiPublicWidgetIdRouteImport } from './routes/api/public/widget/$id'
+import { Route as ApiPublicAnalyticsTrackRouteImport } from './routes/api/public/analytics/track'
+import { Route as ApiPublicShopifyWebhooksShopRedactRouteImport } from './routes/api/public/shopify/webhooks/shop-redact'
+import { Route as ApiPublicShopifyWebhooksProductsUpdateRouteImport } from './routes/api/public/shopify/webhooks/products-update'
+import { Route as ApiPublicShopifyWebhooksCustomersRedactRouteImport } from './routes/api/public/shopify/webhooks/customers-redact'
+import { Route as ApiPublicShopifyWebhooksCustomersDataRequestRouteImport } from './routes/api/public/shopify/webhooks/customers-data-request'
+import { Route as ApiPublicShopifyWebhooksCollectionsUpdateRouteImport } from './routes/api/public/shopify/webhooks/collections-update'
+import { Route as ApiPublicShopifyWebhooksAppUninstalledRouteImport } from './routes/api/public/shopify/webhooks/app-uninstalled'
 
 const WidgetsRoute = WidgetsRouteImport.update({
   id: '/widgets',
@@ -100,6 +108,52 @@ const WidgetPreviewIdRoute = WidgetPreviewIdRouteImport.update({
   path: '/widget-preview/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWidgetIdRoute = ApiPublicWidgetIdRouteImport.update({
+  id: '/api/public/widget/$id',
+  path: '/api/public/widget/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAnalyticsTrackRoute = ApiPublicAnalyticsTrackRouteImport.update({
+  id: '/api/public/analytics/track',
+  path: '/api/public/analytics/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicShopifyWebhooksShopRedactRoute =
+  ApiPublicShopifyWebhooksShopRedactRouteImport.update({
+    id: '/api/public/shopify/webhooks/shop-redact',
+    path: '/api/public/shopify/webhooks/shop-redact',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicShopifyWebhooksProductsUpdateRoute =
+  ApiPublicShopifyWebhooksProductsUpdateRouteImport.update({
+    id: '/api/public/shopify/webhooks/products-update',
+    path: '/api/public/shopify/webhooks/products-update',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicShopifyWebhooksCustomersRedactRoute =
+  ApiPublicShopifyWebhooksCustomersRedactRouteImport.update({
+    id: '/api/public/shopify/webhooks/customers-redact',
+    path: '/api/public/shopify/webhooks/customers-redact',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicShopifyWebhooksCustomersDataRequestRoute =
+  ApiPublicShopifyWebhooksCustomersDataRequestRouteImport.update({
+    id: '/api/public/shopify/webhooks/customers-data-request',
+    path: '/api/public/shopify/webhooks/customers-data-request',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicShopifyWebhooksCollectionsUpdateRoute =
+  ApiPublicShopifyWebhooksCollectionsUpdateRouteImport.update({
+    id: '/api/public/shopify/webhooks/collections-update',
+    path: '/api/public/shopify/webhooks/collections-update',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicShopifyWebhooksAppUninstalledRoute =
+  ApiPublicShopifyWebhooksAppUninstalledRouteImport.update({
+    id: '/api/public/shopify/webhooks/app-uninstalled',
+    path: '/api/public/shopify/webhooks/app-uninstalled',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +171,14 @@ export interface FileRoutesByFullPath {
   '/widgets': typeof WidgetsRouteWithChildren
   '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
+  '/api/public/analytics/track': typeof ApiPublicAnalyticsTrackRoute
+  '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
+  '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
+  '/api/public/shopify/webhooks/collections-update': typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
+  '/api/public/shopify/webhooks/customers-data-request': typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
+  '/api/public/shopify/webhooks/customers-redact': typeof ApiPublicShopifyWebhooksCustomersRedactRoute
+  '/api/public/shopify/webhooks/products-update': typeof ApiPublicShopifyWebhooksProductsUpdateRoute
+  '/api/public/shopify/webhooks/shop-redact': typeof ApiPublicShopifyWebhooksShopRedactRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +196,14 @@ export interface FileRoutesByTo {
   '/widgets': typeof WidgetsRouteWithChildren
   '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
+  '/api/public/analytics/track': typeof ApiPublicAnalyticsTrackRoute
+  '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
+  '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
+  '/api/public/shopify/webhooks/collections-update': typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
+  '/api/public/shopify/webhooks/customers-data-request': typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
+  '/api/public/shopify/webhooks/customers-redact': typeof ApiPublicShopifyWebhooksCustomersRedactRoute
+  '/api/public/shopify/webhooks/products-update': typeof ApiPublicShopifyWebhooksProductsUpdateRoute
+  '/api/public/shopify/webhooks/shop-redact': typeof ApiPublicShopifyWebhooksShopRedactRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +222,14 @@ export interface FileRoutesById {
   '/widgets': typeof WidgetsRouteWithChildren
   '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
+  '/api/public/analytics/track': typeof ApiPublicAnalyticsTrackRoute
+  '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
+  '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
+  '/api/public/shopify/webhooks/collections-update': typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
+  '/api/public/shopify/webhooks/customers-data-request': typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
+  '/api/public/shopify/webhooks/customers-redact': typeof ApiPublicShopifyWebhooksCustomersRedactRoute
+  '/api/public/shopify/webhooks/products-update': typeof ApiPublicShopifyWebhooksProductsUpdateRoute
+  '/api/public/shopify/webhooks/shop-redact': typeof ApiPublicShopifyWebhooksShopRedactRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +249,14 @@ export interface FileRouteTypes {
     | '/widgets'
     | '/widget-preview/$id'
     | '/widgets/$id'
+    | '/api/public/analytics/track'
+    | '/api/public/widget/$id'
+    | '/api/public/shopify/webhooks/app-uninstalled'
+    | '/api/public/shopify/webhooks/collections-update'
+    | '/api/public/shopify/webhooks/customers-data-request'
+    | '/api/public/shopify/webhooks/customers-redact'
+    | '/api/public/shopify/webhooks/products-update'
+    | '/api/public/shopify/webhooks/shop-redact'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +274,14 @@ export interface FileRouteTypes {
     | '/widgets'
     | '/widget-preview/$id'
     | '/widgets/$id'
+    | '/api/public/analytics/track'
+    | '/api/public/widget/$id'
+    | '/api/public/shopify/webhooks/app-uninstalled'
+    | '/api/public/shopify/webhooks/collections-update'
+    | '/api/public/shopify/webhooks/customers-data-request'
+    | '/api/public/shopify/webhooks/customers-redact'
+    | '/api/public/shopify/webhooks/products-update'
+    | '/api/public/shopify/webhooks/shop-redact'
   id:
     | '__root__'
     | '/'
@@ -205,6 +299,14 @@ export interface FileRouteTypes {
     | '/widgets'
     | '/widget-preview/$id'
     | '/widgets/$id'
+    | '/api/public/analytics/track'
+    | '/api/public/widget/$id'
+    | '/api/public/shopify/webhooks/app-uninstalled'
+    | '/api/public/shopify/webhooks/collections-update'
+    | '/api/public/shopify/webhooks/customers-data-request'
+    | '/api/public/shopify/webhooks/customers-redact'
+    | '/api/public/shopify/webhooks/products-update'
+    | '/api/public/shopify/webhooks/shop-redact'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,6 +324,14 @@ export interface RootRouteChildren {
   VideosRoute: typeof VideosRoute
   WidgetsRoute: typeof WidgetsRouteWithChildren
   WidgetPreviewIdRoute: typeof WidgetPreviewIdRoute
+  ApiPublicAnalyticsTrackRoute: typeof ApiPublicAnalyticsTrackRoute
+  ApiPublicWidgetIdRoute: typeof ApiPublicWidgetIdRoute
+  ApiPublicShopifyWebhooksAppUninstalledRoute: typeof ApiPublicShopifyWebhooksAppUninstalledRoute
+  ApiPublicShopifyWebhooksCollectionsUpdateRoute: typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
+  ApiPublicShopifyWebhooksCustomersDataRequestRoute: typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
+  ApiPublicShopifyWebhooksCustomersRedactRoute: typeof ApiPublicShopifyWebhooksCustomersRedactRoute
+  ApiPublicShopifyWebhooksProductsUpdateRoute: typeof ApiPublicShopifyWebhooksProductsUpdateRoute
+  ApiPublicShopifyWebhooksShopRedactRoute: typeof ApiPublicShopifyWebhooksShopRedactRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -331,6 +441,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WidgetPreviewIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/widget/$id': {
+      id: '/api/public/widget/$id'
+      path: '/api/public/widget/$id'
+      fullPath: '/api/public/widget/$id'
+      preLoaderRoute: typeof ApiPublicWidgetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/analytics/track': {
+      id: '/api/public/analytics/track'
+      path: '/api/public/analytics/track'
+      fullPath: '/api/public/analytics/track'
+      preLoaderRoute: typeof ApiPublicAnalyticsTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/webhooks/shop-redact': {
+      id: '/api/public/shopify/webhooks/shop-redact'
+      path: '/api/public/shopify/webhooks/shop-redact'
+      fullPath: '/api/public/shopify/webhooks/shop-redact'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksShopRedactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/webhooks/products-update': {
+      id: '/api/public/shopify/webhooks/products-update'
+      path: '/api/public/shopify/webhooks/products-update'
+      fullPath: '/api/public/shopify/webhooks/products-update'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksProductsUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/webhooks/customers-redact': {
+      id: '/api/public/shopify/webhooks/customers-redact'
+      path: '/api/public/shopify/webhooks/customers-redact'
+      fullPath: '/api/public/shopify/webhooks/customers-redact'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksCustomersRedactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/webhooks/customers-data-request': {
+      id: '/api/public/shopify/webhooks/customers-data-request'
+      path: '/api/public/shopify/webhooks/customers-data-request'
+      fullPath: '/api/public/shopify/webhooks/customers-data-request'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksCustomersDataRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/webhooks/collections-update': {
+      id: '/api/public/shopify/webhooks/collections-update'
+      path: '/api/public/shopify/webhooks/collections-update'
+      fullPath: '/api/public/shopify/webhooks/collections-update'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksCollectionsUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/webhooks/app-uninstalled': {
+      id: '/api/public/shopify/webhooks/app-uninstalled'
+      path: '/api/public/shopify/webhooks/app-uninstalled'
+      fullPath: '/api/public/shopify/webhooks/app-uninstalled'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksAppUninstalledRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -360,17 +526,21 @@ const rootRouteChildren: RootRouteChildren = {
   VideosRoute: VideosRoute,
   WidgetsRoute: WidgetsRouteWithChildren,
   WidgetPreviewIdRoute: WidgetPreviewIdRoute,
+  ApiPublicAnalyticsTrackRoute: ApiPublicAnalyticsTrackRoute,
+  ApiPublicWidgetIdRoute: ApiPublicWidgetIdRoute,
+  ApiPublicShopifyWebhooksAppUninstalledRoute:
+    ApiPublicShopifyWebhooksAppUninstalledRoute,
+  ApiPublicShopifyWebhooksCollectionsUpdateRoute:
+    ApiPublicShopifyWebhooksCollectionsUpdateRoute,
+  ApiPublicShopifyWebhooksCustomersDataRequestRoute:
+    ApiPublicShopifyWebhooksCustomersDataRequestRoute,
+  ApiPublicShopifyWebhooksCustomersRedactRoute:
+    ApiPublicShopifyWebhooksCustomersRedactRoute,
+  ApiPublicShopifyWebhooksProductsUpdateRoute:
+    ApiPublicShopifyWebhooksProductsUpdateRoute,
+  ApiPublicShopifyWebhooksShopRedactRoute:
+    ApiPublicShopifyWebhooksShopRedactRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

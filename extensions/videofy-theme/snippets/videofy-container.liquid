@@ -1,0 +1,9 @@
+{%- comment -%} Shared container Liquid partial. {%- endcomment -%}
+<div
+  class="videofy-widget"
+  data-videofy-widget
+  data-widget-id="{{ widget_id }}"
+  data-widget-type="{{ widget_type }}"
+  data-shop="{{ shop.permanent_domain }}"
+></div>
+{% render 'videofy-loader' %}

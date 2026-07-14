@@ -1,0 +1,13 @@
+{
+  "app": { "name": "Videofy" },
+  "blocks": {
+    "carousel": "Video Carousel",
+    "story": "Story Widget",
+    "product": "Product Widget",
+    "collection": "Collection Widget",
+    "hero": "Hero Widget",
+    "grid": "Grid Widget",
+    "floating": "Floating Widget",
+    "popup": "Popup Widget"
+  }
+}

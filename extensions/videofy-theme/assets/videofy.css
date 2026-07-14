@@ -1,0 +1,5 @@
+.videofy-widget { display: block; width: 100%; }
+.vf-carousel { display: flex; gap: 12px; overflow-x: auto; padding: 8px 0; }
+.vf-card { flex: 0 0 auto; width: 160px; cursor: pointer; }
+.vf-thumb { width: 100%; aspect-ratio: 9/16; border-radius: 12px; background-size: cover; background-position: center; }
+.vf-title { margin-top: 6px; font-size: 13px; line-height: 1.3; }

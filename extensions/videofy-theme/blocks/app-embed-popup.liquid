@@ -1,0 +1,11 @@
+{% if block.settings.widget_id != blank %}
+  {% render 'videofy-container', widget_id: block.settings.widget_id, widget_type: 'popup' %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "Videofy Popup",
+  "target": "body",
+  "settings": [{ "type": "text", "id": "widget_id", "label": "Widget ID" }]
+}
+{% endschema %}

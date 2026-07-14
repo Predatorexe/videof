@@ -1,0 +1,9 @@
+{% render 'videofy-container', widget_id: block.settings.widget_id, widget_type: 'product' %}
+
+{% schema %}
+{
+  "name": "Videofy Product",
+  "target": "section",
+  "settings": [{ "type": "text", "id": "widget_id", "label": "Widget ID" }]
+}
+{% endschema %}
