@@ -1,0 +1,17 @@
+{%- comment -%}
+  App Embed — floating widget, site-wide.
+  Merchants toggle this in the Theme Editor → App embeds.
+{%- endcomment -%}
+{% if block.settings.widget_id != blank %}
+  {% render 'videofy-container', widget_id: block.settings.widget_id, widget_type: 'floating' %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "Videofy Floating Widget",
+  "target": "body",
+  "settings": [
+    { "type": "text", "id": "widget_id", "label": "Widget ID" }
+  ]
+}
+{% endschema %}

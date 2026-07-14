@@ -1,0 +1,5 @@
+name = "videofy-theme"
+type = "theme"
+
+[build]
+watch = ["assets/**/*", "blocks/**/*", "snippets/**/*", "locales/**/*"]
