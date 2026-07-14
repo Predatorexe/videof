@@ -49,8 +49,10 @@ export function sanitizeWidgetCss(input: string | null | undefined, maxLength = 
     removed.push("style-breakout");
     css = css.replace(STYLE_BREAKOUT_RE, "");
   }
+  HTML_COMMENT_RE.lastIndex = 0;
   if (HTML_COMMENT_RE.test(css)) {
     removed.push("html-comment");
+    HTML_COMMENT_RE.lastIndex = 0;
     css = css.replace(HTML_COMMENT_RE, "");
   }
 
