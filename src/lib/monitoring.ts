@@ -137,11 +137,11 @@ export const monitoring = {
   captureMessage(message: string, ctx?: CaptureContext) {
     void initMonitoring();
     if (typeof window !== "undefined") {
-      window.__lovableEvents?.captureMessage?.(message, {
-        ...ctx?.extra,
-        ...ctx?.tags,
-      });
-    }
+    const ev = lovableEvents();
+    ev?.captureMessage?.(message, {
+      ...ctx?.extra,
+      ...ctx?.tags,
+    });
     if (sentry) sentry.captureMessage(message, ctx);
     else console.info("[monitoring]", message, ctx ?? {});
   },
