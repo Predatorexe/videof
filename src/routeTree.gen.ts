@@ -24,6 +24,7 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WidgetsIdRouteImport } from './routes/widgets.$id'
 import { Route as WidgetPreviewIdRouteImport } from './routes/widget-preview.$id'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicWidgetIdRouteImport } from './routes/api/public/widget/$id'
 import { Route as ApiPublicAnalyticsTrackRouteImport } from './routes/api/public/analytics/track'
 import { Route as ApiPublicShopifyWebhooksShopRedactRouteImport } from './routes/api/public/shopify/webhooks/shop-redact'
@@ -108,6 +109,11 @@ const WidgetPreviewIdRoute = WidgetPreviewIdRouteImport.update({
   path: '/widget-preview/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWidgetIdRoute = ApiPublicWidgetIdRouteImport.update({
   id: '/api/public/widget/$id',
   path: '/api/public/widget/$id',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/widgets': typeof WidgetsRouteWithChildren
   '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/analytics/track': typeof ApiPublicAnalyticsTrackRoute
   '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
   '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/widgets': typeof WidgetsRouteWithChildren
   '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/analytics/track': typeof ApiPublicAnalyticsTrackRoute
   '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
   '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/widgets': typeof WidgetsRouteWithChildren
   '/widget-preview/$id': typeof WidgetPreviewIdRoute
   '/widgets/$id': typeof WidgetsIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/analytics/track': typeof ApiPublicAnalyticsTrackRoute
   '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
   '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/widgets'
     | '/widget-preview/$id'
     | '/widgets/$id'
+    | '/api/public/health'
     | '/api/public/analytics/track'
     | '/api/public/widget/$id'
     | '/api/public/shopify/webhooks/app-uninstalled'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/widgets'
     | '/widget-preview/$id'
     | '/widgets/$id'
+    | '/api/public/health'
     | '/api/public/analytics/track'
     | '/api/public/widget/$id'
     | '/api/public/shopify/webhooks/app-uninstalled'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/widgets'
     | '/widget-preview/$id'
     | '/widgets/$id'
+    | '/api/public/health'
     | '/api/public/analytics/track'
     | '/api/public/widget/$id'
     | '/api/public/shopify/webhooks/app-uninstalled'
@@ -324,6 +336,7 @@ export interface RootRouteChildren {
   VideosRoute: typeof VideosRoute
   WidgetsRoute: typeof WidgetsRouteWithChildren
   WidgetPreviewIdRoute: typeof WidgetPreviewIdRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicAnalyticsTrackRoute: typeof ApiPublicAnalyticsTrackRoute
   ApiPublicWidgetIdRoute: typeof ApiPublicWidgetIdRoute
   ApiPublicShopifyWebhooksAppUninstalledRoute: typeof ApiPublicShopifyWebhooksAppUninstalledRoute
@@ -441,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WidgetPreviewIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/widget/$id': {
       id: '/api/public/widget/$id'
       path: '/api/public/widget/$id'
@@ -526,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   VideosRoute: VideosRoute,
   WidgetsRoute: WidgetsRouteWithChildren,
   WidgetPreviewIdRoute: WidgetPreviewIdRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicAnalyticsTrackRoute: ApiPublicAnalyticsTrackRoute,
   ApiPublicWidgetIdRoute: ApiPublicWidgetIdRoute,
   ApiPublicShopifyWebhooksAppUninstalledRoute:
