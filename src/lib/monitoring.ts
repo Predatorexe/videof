@@ -30,20 +30,13 @@ interface CaptureContext {
   level?: Severity;
 }
 
-type LovableEvents = {
-  captureException?: (
-    error: unknown,
-    context?: Record<string, unknown>,
-    options?: { mechanism?: string; handled?: boolean; severity?: string },
-  ) => void;
+type LovableEventsExt = {
   captureMessage?: (message: string, context?: Record<string, unknown>) => void;
 };
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-  interface Window {
-    __lovableEvents?: LovableEvents;
-  }
+function lovableEvents(): (Window["__lovableEvents"] & LovableEventsExt) | undefined {
+  if (typeof window === "undefined") return undefined;
+  return window.__lovableEvents as (Window["__lovableEvents"] & LovableEventsExt) | undefined;
 }
 
 /** Lazily initialised Sentry client (null when disabled). */
