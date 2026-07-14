@@ -24,7 +24,7 @@ const BEHAVIOR_RE = /(^|[\s;{])behavior\s*:/i;
 // `</style` (any case, optional slash spacing) — would break out of the wrapping <style> tag.
 const STYLE_BREAKOUT_RE = /<\s*\/?\s*style\b/i;
 // HTML-comment / CDATA smuggling
-const HTML_COMMENT_RE = /<!--|-->|<!\[CDATA\[/;
+const HTML_COMMENT_RE = /<!--|-->|<!\[CDATA\[/g;
 // Forbidden at-rules: @import (external fetch), @charset (must be first byte anyway).
 const FORBIDDEN_AT_RULE_RE = /@\s*(import|charset|document)\b/i;
 
