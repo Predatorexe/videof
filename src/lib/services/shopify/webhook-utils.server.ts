@@ -10,6 +10,7 @@
  * the handler — never at module scope of a route file.
  */
 import { verifyShopifyWebhook } from "@/lib/security/hmac.server";
+import { rateLimit } from "@/lib/security/rate-limit.server";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -25,6 +26,15 @@ export async function verifyAndParse<T = unknown>(request: Request): Promise<Ver
   const hmac = request.headers.get("X-Shopify-Hmac-Sha256");
   const topic = request.headers.get("X-Shopify-Topic") ?? "";
   const domain = request.headers.get("X-Shopify-Shop-Domain") ?? "";
+  const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
+  // Per-IP + per-shop-domain cap. HMAC verification alone doesn't stop
+  // a flood of correctly-signed replays, and unauthenticated attackers
+  // would fail verification but still hit the JSON parser first.
+  try {
+    rateLimit({ key: `webhook:${domain}:${ip}`, max: 240, windowMs: 60_000 });
+  } catch {
+    return new Response("Too many requests", { status: 429 });
+  }
   const raw = await request.text();
 
   if (!secret) {
