@@ -100,9 +100,12 @@ export async function initMonitoring(): Promise<void> {
   return initPromise;
 }
 
-function toLovable(error: unknown, ctx: CaptureContext | undefined, mechanism: string) {
-  if (typeof window === "undefined") return;
-  window.__lovableEvents?.captureException?.(
+type Mechanism = "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
+
+function toLovable(error: unknown, ctx: CaptureContext | undefined, mechanism: Mechanism) {
+  const ev = lovableEvents();
+  if (!ev) return;
+  ev.captureException?.(
     error,
     {
       route: typeof location !== "undefined" ? location.pathname : undefined,
