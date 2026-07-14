@@ -136,7 +136,6 @@ export const monitoring = {
 
   captureMessage(message: string, ctx?: CaptureContext) {
     void initMonitoring();
-    if (typeof window !== "undefined") {
     const ev = lovableEvents();
     ev?.captureMessage?.(message, {
       ...ctx?.extra,
