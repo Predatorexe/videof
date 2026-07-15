@@ -18,6 +18,7 @@ import { ShopifyCollectionService } from "@/lib/services/shopify/collection-serv
 import { ShopifyCustomerService } from "@/lib/services/shopify/customer-service.server";
 import { ShopifyOrderService } from "@/lib/services/shopify/order-service.server";
 import { requireShopContext } from "@/lib/services/shopify/shop-context.server";
+import { withRetry } from "@/lib/retry";
 import { logger } from "@/lib/logger";
 
 const MAX_PAGES = 20; // Safety cap — 20 pages * 50/page = 1000 rows/call.
@@ -51,7 +52,10 @@ export const syncShopifyProducts = createServerFn({ method: "POST" }).handler(as
   let synced = 0;
 
   do {
-    const res = (await service.list(50, after)) as {
+    const res = (await withRetry(() => service.list(50, after), {
+      onRetry: (err, attempt, delay) =>
+        logger.warn("shopify.sync.products.retry", { attempt, delay, err: String(err) }),
+    })) as {
       products: {
         pageInfo: { hasNextPage: boolean; endCursor: string | null };
         edges: Array<{ node: AdminProduct }>;
@@ -109,7 +113,10 @@ export const syncShopifyCollections = createServerFn({ method: "POST" }).handler
   let synced = 0;
 
   do {
-    const res = (await service.list(50, after)) as {
+    const res = (await withRetry(() => service.list(50, after), {
+      onRetry: (err, attempt, delay) =>
+        logger.warn("shopify.sync.collections.retry", { attempt, delay, err: String(err) }),
+    })) as {
       collections: {
         pageInfo: { hasNextPage: boolean; endCursor: string | null };
         edges: Array<{ node: AdminCollection }>;
@@ -162,7 +169,10 @@ export const syncShopifyCustomers = createServerFn({ method: "POST" }).handler(a
   let synced = 0;
 
   do {
-    const res = (await service.list(50, after)) as {
+    const res = (await withRetry(() => service.list(50, after), {
+      onRetry: (err, attempt, delay) =>
+        logger.warn("shopify.sync.customers.retry", { attempt, delay, err: String(err) }),
+    })) as {
       customers: {
         pageInfo: { hasNextPage: boolean; endCursor: string | null };
         edges: Array<{ node: AdminCustomer }>;
@@ -227,7 +237,10 @@ export const syncShopifyOrders = createServerFn({ method: "POST" })
     const orders: AdminOrderNode[] = [];
 
     do {
-      const res = (await service.list(50, after, data.query)) as {
+      const res = (await withRetry(() => service.list(50, after, data.query), {
+        onRetry: (err, attempt, delay) =>
+          logger.warn("shopify.sync.orders.retry", { attempt, delay, err: String(err) }),
+      })) as {
         orders: {
           pageInfo: { hasNextPage: boolean; endCursor: string | null };
           edges: Array<{ node: AdminOrderNode }>;
