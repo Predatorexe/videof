@@ -1,17 +1,20 @@
 /**
- * App Bridge bootstrap.
+ * App Bridge bootstrap + shop-context resolver.
  *
- * When the app runs *inside* the Shopify admin iframe (URL carries a
- * `host` parameter set by Shopify), we load the App Bridge CDN script
- * and configure it with the public API key. Outside Shopify (standalone
- * dashboard / dev) this component renders nothing — the standalone
- * routes continue to work exactly as before.
+ * When the app runs inside the Shopify admin iframe (URL carries a `host`
+ * parameter), we load the App Bridge CDN script and configure it with the
+ * public API key. Outside Shopify (Lovable preview / standalone dashboard)
+ * this returns null and no App Bridge is injected.
  *
- * The bridge exposes `window.shopify` which lets us fetch a Shopify
- * session token to attach to every authenticated fetch to our own
- * server routes (see attachShopifySessionToken).
+ * On mount we also try to resolve the caller's current shop from the
+ * database (`api.shop.getCurrentShop`). If it resolves, we push the id into
+ * `useShopStore`, which triggers hydration of every domain store from the
+ * server. If it fails or returns null, the stores keep using their mock
+ * seed data — this is the intended fallback for the preview.
  */
 import { useEffect, useState } from "react";
+import { useShopStore } from "@/stores/shop-store";
+import { getCurrentShop } from "@/lib/api/shop.functions";
 
 declare global {
   interface Window {
@@ -24,6 +27,24 @@ declare global {
 
 export function ShopifyAppBridge() {
   const [ready, setReady] = useState(false);
+  const setShop = useShopStore((s) => s.setShop);
+  const setStatus = useShopStore((s) => s.setStatus);
+
+  // Resolve the active shop for the signed-in merchant once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("resolving");
+    getCurrentShop()
+      .then((shop) => {
+        if (cancelled) return;
+        setShop(shop);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setShop(null);
+      });
+    return () => { cancelled = true; };
+  }, [setShop, setStatus]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
