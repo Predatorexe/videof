@@ -20,7 +20,7 @@ import { UploadVideoDialog } from "@/components/dialogs/upload-video-dialog";
 import { CreateWidgetDialog } from "@/components/dialogs/create-widget-dialog";
 import { CreateProductDialog } from "@/components/dialogs/create-product-dialog";
 import { CreateCollectionDialog } from "@/components/dialogs/create-collection-dialog";
-import { UpdateCardDialog } from "@/components/dialogs/update-card-dialog";
+
 import { useUiStore } from "@/stores/ui-store";
 import { ShopifyAppBridge } from "@/components/shopify-app-bridge";
 
