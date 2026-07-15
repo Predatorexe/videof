@@ -35,6 +35,7 @@ type State = {
   trackView: (id: string) => void;
   trackClick: (id: string) => void;
   createFromUpload: (input: { title: string; size: number; durationSeconds: number }) => Video;
+  applyServerRow: (row: VideoRow, replaceId?: string) => Video;
   hydrate: (shopId: string) => Promise<void>;
 };
 
@@ -199,6 +200,16 @@ export const useVideosStore = create<State>((set, get) => ({
         }));
       }, 2500);
     }
+    return v;
+  },
+
+  applyServerRow: (row, replaceId) => {
+    const v = videoFromRow(row);
+    set((s) => {
+      const filtered = replaceId ? s.items.filter((x) => x.id !== replaceId) : s.items;
+      const without = filtered.filter((x) => x.id !== v.id);
+      return { items: [v, ...without] };
+    });
     return v;
   },
 }));

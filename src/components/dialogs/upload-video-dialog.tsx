@@ -16,6 +16,9 @@ import { useVideosStore } from "@/stores/videos-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { useNotificationsStore } from "@/stores/notifications-store";
 import { useUiStore } from "@/stores/ui-store";
+import { useShopStore } from "@/stores/shop-store";
+import { initiateVideoUpload, finalizeVideoUpload } from "@/lib/api/videos.functions";
+import type { VideoRow } from "@/lib/adapters/videos";
 
 const MAX_BYTES = 500 * 1024 * 1024; // 500 MB
 const ACCEPT = ["video/mp4", "video/quicktime", "video/webm"];
@@ -26,30 +29,68 @@ type Pending = {
   progress: number;
   done: boolean;
   error?: string;
+  xhr?: XMLHttpRequest;
 };
+
+/** Upload a file to a presigned URL and report progress. */
+function uploadToTicket(
+  ticket: { uploadUrl: string; method: "POST" | "PUT"; fields?: Record<string, string>; headers?: Record<string, string> },
+  file: File,
+  onProgress: (pct: number) => void,
+): { xhr: XMLHttpRequest; promise: Promise<void> } {
+  const xhr = new XMLHttpRequest();
+  const promise = new Promise<void>((resolve, reject) => {
+    xhr.open(ticket.method, ticket.uploadUrl, true);
+    if (ticket.method === "PUT" && ticket.headers) {
+      for (const [k, v] of Object.entries(ticket.headers)) xhr.setRequestHeader(k, v);
+    }
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Upload failed (${xhr.status})`));
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onabort = () => reject(new Error("Cancelled"));
+
+    if (ticket.method === "POST") {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(ticket.fields ?? {})) form.append(k, v);
+      form.append("file", file);
+      xhr.send(form);
+    } else {
+      xhr.send(file);
+    }
+  });
+  return { xhr, promise };
+}
 
 export function UploadVideoDialog() {
   const open = useUiStore((s) => s.uploadVideoOpen);
   const setOpen = useUiStore((s) => s.setUploadVideoOpen);
+  const shopId = useShopStore((s) => s.shop?.id ?? null);
   const createFromUpload = useVideosStore((s) => s.createFromUpload);
+  const applyServerRow = useVideosStore((s) => s.applyServerRow);
+  const removeLocal = useVideosStore((s) => s.remove);
   const log = useActivityStore((s) => s.log);
   const notify = useNotificationsStore((s) => s.push);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [pending, setPending] = useState<Pending[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const timersRef = useRef<Set<number>>(new Set());
+  const xhrsRef = useRef<Map<string, XMLHttpRequest>>(new Map());
 
   useEffect(() => {
     return () => {
-      timersRef.current.forEach((t) => window.clearTimeout(t));
-      timersRef.current.clear();
+      xhrsRef.current.forEach((x) => x.abort());
+      xhrsRef.current.clear();
     };
   }, []);
 
   useEffect(() => {
     if (!open) {
-      timersRef.current.forEach((t) => window.clearTimeout(t));
-      timersRef.current.clear();
+      xhrsRef.current.forEach((x) => x.abort());
+      xhrsRef.current.clear();
       setPending([]);
       setDragOver(false);
     }
@@ -63,6 +104,64 @@ export function UploadVideoDialog() {
     return null;
   };
 
+  const setItem = (id: string, patch: Partial<Pending>) =>
+    setPending((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
+  const runRealUpload = async (item: Pending) => {
+    if (!shopId) return;
+    const title = item.file.name.replace(/\.[^.]+$/, "");
+    let placeholderId: string | null = null;
+    try {
+      const { video, upload } = await initiateVideoUpload({
+        data: {
+          shopId,
+          title,
+          filename: item.file.name,
+          contentType: item.file.type || "video/mp4",
+          size: item.file.size,
+        },
+      });
+      const row = video as VideoRow;
+      placeholderId = row.id;
+      applyServerRow(row);
+
+      const { xhr, promise } = uploadToTicket(upload, item.file, (pct) =>
+        setItem(item.id, { progress: Math.max(1, Math.min(99, pct)) }),
+      );
+      xhrsRef.current.set(item.id, xhr);
+      setItem(item.id, { xhr });
+      await promise;
+      xhrsRef.current.delete(item.id);
+
+      const finalized = (await finalizeVideoUpload({ data: { id: row.id } })) as VideoRow;
+      const v = applyServerRow(finalized, row.id);
+      log("upload", "Video uploaded", v.title);
+      notify({
+        kind: "success",
+        title: "Upload complete",
+        body: `${v.title} finished processing.`,
+      });
+      setItem(item.id, { progress: 100, done: true });
+    } catch (err) {
+      xhrsRef.current.delete(item.id);
+      if (placeholderId) removeLocal(placeholderId);
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setItem(item.id, { done: true, error: msg });
+      toast.error(`${item.file.name}: ${msg}`);
+    }
+  };
+
+  const runPreviewUpload = (item: Pending) => {
+    // Preview mode (no shop connected): create a local video record and
+    // ramp progress to 100 without any network activity.
+    const title = item.file.name.replace(/\.[^.]+$/, "");
+    const duration = 20 + Math.round(Math.random() * 40);
+    const v = createFromUpload({ title, size: item.file.size, durationSeconds: duration });
+    log("upload", "Video uploaded", v.title);
+    notify({ kind: "success", title: "Upload complete", body: `${v.title} added.` });
+    setItem(item.id, { progress: 100, done: true });
+  };
+
   const handleFiles = (files: FileList | File[]) => {
     const arr = Array.from(files);
     const created: Pending[] = [];
@@ -74,42 +173,20 @@ export function UploadVideoDialog() {
     }
     if (created.length === 0) return;
     setPending((p) => [...p, ...created]);
-    // Simulate progress + creation for valid files.
-    created
-      .filter((p) => !p.error)
-      .forEach((p) => {
-        const step = () => {
-          const t = window.setTimeout(() => {
-            timersRef.current.delete(t);
-            setPending((prev) =>
-              prev.map((x) => {
-                if (x.id !== p.id || x.done) return x;
-                const next = Math.min(100, x.progress + Math.round(8 + Math.random() * 14));
-                if (next >= 100) {
-                  const duration = 20 + Math.round(Math.random() * 40);
-                  const title = p.file.name.replace(/\.[^.]+$/, "");
-                  const v = createFromUpload({
-                    title,
-                    size: p.file.size,
-                    durationSeconds: duration,
-                  });
-                  log("upload", "Video uploaded", v.title);
-                  notify({
-                    kind: "success",
-                    title: "Upload complete",
-                    body: `${v.title} finished processing.`,
-                  });
-                  return { ...x, progress: 100, done: true };
-                }
-                step();
-                return { ...x, progress: next };
-              }),
-            );
-          }, 140);
-          timersRef.current.add(t);
-        };
-        step();
-      });
+    for (const item of created) {
+      if (item.error) continue;
+      if (shopId) void runRealUpload(item);
+      else runPreviewUpload(item);
+    }
+  };
+
+  const cancel = (id: string) => {
+    const x = xhrsRef.current.get(id);
+    if (x) {
+      x.abort();
+      xhrsRef.current.delete(id);
+    }
+    setItem(id, { done: true, error: "Cancelled" });
   };
 
   const allDone = pending.length > 0 && pending.every((p) => p.done);
@@ -175,9 +252,7 @@ export function UploadVideoDialog() {
                         className="text-muted-foreground hover:text-foreground"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setPending((prev) =>
-                            prev.map((x) => (x.id === p.id ? { ...x, done: true, error: "Cancelled" } : x)),
-                          );
+                          cancel(p.id);
                         }}
                       >
                         <X className="h-3 w-3" />
