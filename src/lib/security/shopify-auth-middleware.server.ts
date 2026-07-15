@@ -141,20 +141,25 @@ export const requireShopifyOrSupabaseAuth = createMiddleware({ type: "function" 
         session.shopDomain,
       );
 
-      return next({
-        context: {
-          supabase: supabaseAdmin as unknown as ServerSupabase,
-          userId: ownerUserId,
-          shopId: shopRow.id,
-          shopDomain: session.shopDomain,
-          claims: {
-            ...session.claims,
-            sub: ownerUserId,
-            shopify_user_id: session.shopifyUserId,
-            via: "shopify" as const,
-          },
+      const shopifyContext: {
+        supabase: ServerSupabase;
+        userId: string;
+        shopId: string | undefined;
+        shopDomain: string | undefined;
+        claims: Record<string, unknown>;
+      } = {
+        supabase: supabaseAdmin as unknown as ServerSupabase,
+        userId: ownerUserId,
+        shopId: shopRow.id,
+        shopDomain: session.shopDomain,
+        claims: {
+          ...session.claims,
+          sub: ownerUserId,
+          shopify_user_id: session.shopifyUserId,
+          via: "shopify" as const,
         },
-      });
+      };
+      return next({ context: shopifyContext });
     }
 
     // Fallback — non-embedded (marketing dashboard / preview / CLI).
