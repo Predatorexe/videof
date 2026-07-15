@@ -7,10 +7,11 @@ import { PageShell, Stat } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
-import { fmt, revenueTrend, viewsTrend } from "@/lib/mock-data";
+import { fmt } from "@/lib/format";
 import { useVideosStore } from "@/stores/videos-store";
 import { useWidgetsStore } from "@/stores/widgets-store";
 import { useActivityStore } from "@/stores/activity-store";
+import { useAnalyticsStore, type ViewsPoint } from "@/stores/analytics-store";
 import { exportCsv } from "@/lib/csv";
 
 const ViewsAreaChart = lazy(() => import("@/components/charts/views-area-chart"));
@@ -40,11 +41,11 @@ function AnalyticsPending() {
 
 type Range = "daily" | "weekly" | "monthly" | "yearly";
 
-function aggregate(range: Range) {
-  // Derive a series from the daily seed, aggregated to the chosen bucket.
+function aggregate(range: Range, viewsTrend: ViewsPoint[]): ViewsPoint[] {
+  // Derive a series from the daily source, aggregated to the chosen bucket.
   if (range === "daily") return viewsTrend;
   const bucket = range === "weekly" ? 7 : range === "monthly" ? 4 : 12;
-  const out: { day: string; views: number; clicks: number }[] = [];
+  const out: ViewsPoint[] = [];
   for (let i = 0; i < viewsTrend.length; i += bucket) {
     const slice = viewsTrend.slice(i, i + bucket);
     if (slice.length === 0) continue;
@@ -61,9 +62,11 @@ function AnalyticsPage() {
   const videos = useVideosStore((s) => s.items);
   const widgets = useWidgetsStore((s) => s.items);
   const log = useActivityStore((s) => s.log);
+  const viewsTrend = useAnalyticsStore((s) => s.viewsSeries);
+  const revenueTrend = useAnalyticsStore((s) => s.revenueSeries);
   const [range, setRange] = useState<Range>("daily");
 
-  const series = useMemo(() => aggregate(range), [range]);
+  const series = useMemo(() => aggregate(range, viewsTrend), [range, viewsTrend]);
 
   const totals = useMemo(() => {
     const views = videos.reduce((s, v) => s + v.views, 0);
