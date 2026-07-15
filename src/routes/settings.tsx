@@ -233,38 +233,42 @@ function SettingsPage() {
 
         <TabsContent value="api" className="mt-6">
           <Card title="API keys">
-            <FormRow label="Publishable key">
-              <div className="flex gap-2">
-                <Input readOnly value={apiState.publishableKey} className="font-mono" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(apiState.publishableKey, { successMessage: "Publishable key copied" })}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </FormRow>
-            <FormRow label="Secret key">
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  type={showSecret ? "text" : "password"}
-                  value={apiState.secretKey}
-                  className="font-mono"
-                />
-                <Button variant="outline" size="icon" onClick={() => setShowSecret((v) => !v)}>
-                  {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(apiState.secretKey, { successMessage: "Secret copied" })}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </FormRow>
+            {apiState.publishableKey ? (
+              <FormRow label="Publishable key">
+                <div className="flex gap-2">
+                  <Input readOnly value={apiState.publishableKey} className="font-mono" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(apiState.publishableKey, { successMessage: "Publishable key copied" })}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </FormRow>
+            ) : null}
+            {apiState.secretKey ? (
+              <FormRow label="Secret key">
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    type={showSecret ? "text" : "password"}
+                    value={apiState.secretKey}
+                    className="font-mono"
+                  />
+                  <Button variant="outline" size="icon" onClick={() => setShowSecret((v) => !v)}>
+                    {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(apiState.secretKey, { successMessage: "Secret copied" })}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </FormRow>
+            ) : null}
             <FormRow label="Webhook endpoint" error={apiErrors.webhookEndpoint}>
               <Input
                 value={apiState.webhookEndpoint}
