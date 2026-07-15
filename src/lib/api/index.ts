@@ -10,3 +10,4 @@ export * as notifications from "./notifications.functions";
 export * as settings from "./settings.functions";
 export * as profile from "./profile.functions";
 export * as media from "./media.functions";
+export * as shopifySync from "./shopify-sync.functions";
