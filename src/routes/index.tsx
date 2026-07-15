@@ -5,12 +5,13 @@ import { ArrowUpRight, Film, Play, Sparkles, TrendingUp, Radio } from "lucide-re
 import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
-import { fmt, revenueTrend, trafficSources, viewsTrend } from "@/lib/mock-data";
+import { fmt } from "@/lib/format";
 import { useVideosStore } from "@/stores/videos-store";
 import { useWidgetsStore } from "@/stores/widgets-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { useProfileStore } from "@/stores/profile-store";
 import { useUiStore } from "@/stores/ui-store";
+import { useAnalyticsStore } from "@/stores/analytics-store";
 
 const ViewsAreaChart = lazy(() => import("@/components/charts/views-area-chart"));
 const RevenueBarChart = lazy(() => import("@/components/charts/revenue-bar-chart"));
