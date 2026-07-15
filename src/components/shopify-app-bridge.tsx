@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { useShopStore } from "@/stores/shop-store";
 import { getCurrentShop } from "@/lib/api/shop.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 declare global {
   interface Window {
@@ -31,18 +32,23 @@ export function ShopifyAppBridge() {
   const setStatus = useShopStore((s) => s.setStatus);
 
   // Resolve the active shop for the signed-in merchant once on mount.
+  // Skip entirely when there is no Supabase session (Lovable preview,
+  // signed-out visitors) so we don't fire an unauthorized RPC.
   useEffect(() => {
     let cancelled = false;
     setStatus("resolving");
-    getCurrentShop()
-      .then((shop) => {
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (!data.session) { setShop(null); return; }
+        const shop = await getCurrentShop();
         if (cancelled) return;
         setShop(shop);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setShop(null);
-      });
+      } catch {
+        if (!cancelled) setShop(null);
+      }
+    })();
     return () => { cancelled = true; };
   }, [setShop, setStatus]);
 

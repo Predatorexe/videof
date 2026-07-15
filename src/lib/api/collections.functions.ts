@@ -9,17 +9,19 @@ export const listCollections = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ shopId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase.from("collections")
-      .select("*").eq("shop_id", data.shopId).order("created_at", { ascending: false });
+      .select("*, collection_products(count)")
+      .eq("shop_id", data.shopId).order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
 
 export const createCollection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => collectionCreateSchema.parse(d))
+  .inputValidator((d) => collectionCreateSchema.extend({ shopifyCollectionId: z.string().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase.from("collections").insert({
       shop_id: data.shopId,
+      shopify_collection_id: data.shopifyCollectionId ?? `local-${Date.now()}`,
       title: data.title,
       handle: data.handle,
       description: data.description,
@@ -27,6 +29,23 @@ export const createCollection = createServerFn({ method: "POST" })
     } as never).select().single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+export const updateCollection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: uuid,
+    title: z.string().max(200).optional(),
+    imageUrl: z.string().url().optional(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const row: Record<string, unknown> = {};
+    if (data.title !== undefined) row.title = data.title;
+    if (data.imageUrl !== undefined) row.image_url = data.imageUrl;
+    const { data: updated, error } = await context.supabase.from("collections")
+      .update(row as never).eq("id", data.id).select().single();
+    if (error) throw new Error(error.message);
+    return updated;
   });
 
 export const assignProductsToCollection = createServerFn({ method: "POST" })
