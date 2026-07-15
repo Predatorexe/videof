@@ -39,12 +39,54 @@ export const updateWidget = createServerFn({ method: "POST" })
     new WidgetService(context.supabase).update(data),
   );
 
+/** Toggle widget enabled/disabled by flipping status between published/draft. */
+export const toggleWidget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid, enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase.from("widgets")
+      .update({ status: data.enabled ? "published" : "draft" } as never)
+      .eq("id", data.id).select().single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+/** Rename a widget in place. */
+export const renameWidget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid, name: z.string().trim().min(1).max(120) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase.from("widgets")
+      .update({ name: data.name } as never).eq("id", data.id).select().single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+/** Publish and persist publish_meta atomically. */
 export const publishWidget = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => widgetPublishSchema.parse(d))
-  .handler(async ({ data, context }) =>
-    new WidgetService(context.supabase).publish(data.id, context.userId),
-  );
+  .handler(async ({ data, context }) => {
+    const svc = new WidgetService(context.supabase);
+    const published = await svc.publish(data.id, context.userId);
+    // Compute + persist a stable publish_meta blob the client can render.
+    const token = ((published.widget.publish_meta as { embedToken?: string } | null)?.embedToken)
+      || `wgt_${data.id.replace(/-/g, "")}_${Date.now().toString(36)}`;
+    const now = new Date().toISOString();
+    const meta = {
+      embedToken: token,
+      publicUrl: `https://cdn.videofy.app/w/${data.id}?t=${token}`,
+      previewUrl: `/widget-preview/${data.id}`,
+      createdAt: (published.widget.publish_meta as { createdAt?: string } | null)?.createdAt ?? now,
+      updatedAt: now,
+      version: published.version.version,
+      status: "live" as const,
+    };
+    const { error } = await context.supabase.from("widgets")
+      .update({ publish_meta: meta as never }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { widget: { ...published.widget, publish_meta: meta }, version: published.version, meta };
+  });
 
 export const unpublishWidget = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -66,3 +108,26 @@ export const deleteWidget = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     new WidgetService(context.supabase).remove(data.id),
   );
+
+export const duplicateWidget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: src, error: readErr } = await context.supabase.from("widgets")
+      .select("*").eq("id", data.id).maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!src) throw new Error("Widget not found");
+    const suffix = Date.now().toString(36);
+    const { data: copy, error } = await context.supabase.from("widgets").insert({
+      shop_id: src.shop_id,
+      type: src.type,
+      name: `${src.name} (copy)`,
+      handle: `${src.handle ?? "widget"}-copy-${suffix}`,
+      config: src.config,
+      custom_css: src.custom_css,
+      status: "draft",
+      created_by: context.userId,
+    } as never).select().single();
+    if (error) throw new Error(error.message);
+    return copy;
+  });
