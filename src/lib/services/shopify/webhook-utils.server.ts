@@ -22,7 +22,10 @@ export interface VerifiedWebhook<T = unknown> {
 
 export async function verifyAndParse<T = unknown>(request: Request): Promise<VerifiedWebhook<T> | Response> {
   const env = serverEnv();
-  const secret = env.SHOPIFY_WEBHOOK_SECRET;
+  // Shopify signs webhooks with the app's API secret by default. A dedicated
+  // SHOPIFY_WEBHOOK_SECRET is only used when the merchant configured a
+  // separate signing secret in the Partner dashboard. Fall back to API secret.
+  const secret = env.SHOPIFY_WEBHOOK_SECRET ?? env.SHOPIFY_API_SECRET;
   const hmac = request.headers.get("X-Shopify-Hmac-Sha256");
   const topic = request.headers.get("X-Shopify-Topic") ?? "";
   const domain = request.headers.get("X-Shopify-Shop-Domain") ?? "";
