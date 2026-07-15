@@ -34,6 +34,8 @@ import { Route as ApiPublicShopifyWebhooksCustomersRedactRouteImport } from './r
 import { Route as ApiPublicShopifyWebhooksCustomersDataRequestRouteImport } from './routes/api/public/shopify/webhooks/customers-data-request'
 import { Route as ApiPublicShopifyWebhooksCollectionsUpdateRouteImport } from './routes/api/public/shopify/webhooks/collections-update'
 import { Route as ApiPublicShopifyWebhooksAppUninstalledRouteImport } from './routes/api/public/shopify/webhooks/app-uninstalled'
+import { Route as ApiPublicShopifyWebhooksAppSubscriptionsUpdateRouteImport } from './routes/api/public/shopify/webhooks/app-subscriptions-update'
+import { Route as ApiPublicShopifyBillingCallbackRouteImport } from './routes/api/public/shopify/billing/callback'
 import { Route as ApiPublicShopifyAuthInstallRouteImport } from './routes/api/public/shopify/auth/install'
 import { Route as ApiPublicShopifyAuthCallbackRouteImport } from './routes/api/public/shopify/auth/callback'
 
@@ -168,6 +170,18 @@ const ApiPublicShopifyWebhooksAppUninstalledRoute =
     path: '/api/public/shopify/webhooks/app-uninstalled',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute =
+  ApiPublicShopifyWebhooksAppSubscriptionsUpdateRouteImport.update({
+    id: '/api/public/shopify/webhooks/app-subscriptions-update',
+    path: '/api/public/shopify/webhooks/app-subscriptions-update',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicShopifyBillingCallbackRoute =
+  ApiPublicShopifyBillingCallbackRouteImport.update({
+    id: '/api/public/shopify/billing/callback',
+    path: '/api/public/shopify/billing/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicShopifyAuthInstallRoute =
   ApiPublicShopifyAuthInstallRouteImport.update({
     id: '/api/public/shopify/auth/install',
@@ -203,6 +217,8 @@ export interface FileRoutesByFullPath {
   '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
   '/api/public/shopify/auth/callback': typeof ApiPublicShopifyAuthCallbackRoute
   '/api/public/shopify/auth/install': typeof ApiPublicShopifyAuthInstallRoute
+  '/api/public/shopify/billing/callback': typeof ApiPublicShopifyBillingCallbackRoute
+  '/api/public/shopify/webhooks/app-subscriptions-update': typeof ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute
   '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
   '/api/public/shopify/webhooks/collections-update': typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
   '/api/public/shopify/webhooks/customers-data-request': typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
@@ -232,6 +248,8 @@ export interface FileRoutesByTo {
   '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
   '/api/public/shopify/auth/callback': typeof ApiPublicShopifyAuthCallbackRoute
   '/api/public/shopify/auth/install': typeof ApiPublicShopifyAuthInstallRoute
+  '/api/public/shopify/billing/callback': typeof ApiPublicShopifyBillingCallbackRoute
+  '/api/public/shopify/webhooks/app-subscriptions-update': typeof ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute
   '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
   '/api/public/shopify/webhooks/collections-update': typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
   '/api/public/shopify/webhooks/customers-data-request': typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
@@ -262,6 +280,8 @@ export interface FileRoutesById {
   '/api/public/widget/$id': typeof ApiPublicWidgetIdRoute
   '/api/public/shopify/auth/callback': typeof ApiPublicShopifyAuthCallbackRoute
   '/api/public/shopify/auth/install': typeof ApiPublicShopifyAuthInstallRoute
+  '/api/public/shopify/billing/callback': typeof ApiPublicShopifyBillingCallbackRoute
+  '/api/public/shopify/webhooks/app-subscriptions-update': typeof ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute
   '/api/public/shopify/webhooks/app-uninstalled': typeof ApiPublicShopifyWebhooksAppUninstalledRoute
   '/api/public/shopify/webhooks/collections-update': typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
   '/api/public/shopify/webhooks/customers-data-request': typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
@@ -293,6 +313,8 @@ export interface FileRouteTypes {
     | '/api/public/widget/$id'
     | '/api/public/shopify/auth/callback'
     | '/api/public/shopify/auth/install'
+    | '/api/public/shopify/billing/callback'
+    | '/api/public/shopify/webhooks/app-subscriptions-update'
     | '/api/public/shopify/webhooks/app-uninstalled'
     | '/api/public/shopify/webhooks/collections-update'
     | '/api/public/shopify/webhooks/customers-data-request'
@@ -322,6 +344,8 @@ export interface FileRouteTypes {
     | '/api/public/widget/$id'
     | '/api/public/shopify/auth/callback'
     | '/api/public/shopify/auth/install'
+    | '/api/public/shopify/billing/callback'
+    | '/api/public/shopify/webhooks/app-subscriptions-update'
     | '/api/public/shopify/webhooks/app-uninstalled'
     | '/api/public/shopify/webhooks/collections-update'
     | '/api/public/shopify/webhooks/customers-data-request'
@@ -351,6 +375,8 @@ export interface FileRouteTypes {
     | '/api/public/widget/$id'
     | '/api/public/shopify/auth/callback'
     | '/api/public/shopify/auth/install'
+    | '/api/public/shopify/billing/callback'
+    | '/api/public/shopify/webhooks/app-subscriptions-update'
     | '/api/public/shopify/webhooks/app-uninstalled'
     | '/api/public/shopify/webhooks/collections-update'
     | '/api/public/shopify/webhooks/customers-data-request'
@@ -380,6 +406,8 @@ export interface RootRouteChildren {
   ApiPublicWidgetIdRoute: typeof ApiPublicWidgetIdRoute
   ApiPublicShopifyAuthCallbackRoute: typeof ApiPublicShopifyAuthCallbackRoute
   ApiPublicShopifyAuthInstallRoute: typeof ApiPublicShopifyAuthInstallRoute
+  ApiPublicShopifyBillingCallbackRoute: typeof ApiPublicShopifyBillingCallbackRoute
+  ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute: typeof ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute
   ApiPublicShopifyWebhooksAppUninstalledRoute: typeof ApiPublicShopifyWebhooksAppUninstalledRoute
   ApiPublicShopifyWebhooksCollectionsUpdateRoute: typeof ApiPublicShopifyWebhooksCollectionsUpdateRoute
   ApiPublicShopifyWebhooksCustomersDataRequestRoute: typeof ApiPublicShopifyWebhooksCustomersDataRequestRoute
@@ -565,6 +593,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicShopifyWebhooksAppUninstalledRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/shopify/webhooks/app-subscriptions-update': {
+      id: '/api/public/shopify/webhooks/app-subscriptions-update'
+      path: '/api/public/shopify/webhooks/app-subscriptions-update'
+      fullPath: '/api/public/shopify/webhooks/app-subscriptions-update'
+      preLoaderRoute: typeof ApiPublicShopifyWebhooksAppSubscriptionsUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shopify/billing/callback': {
+      id: '/api/public/shopify/billing/callback'
+      path: '/api/public/shopify/billing/callback'
+      fullPath: '/api/public/shopify/billing/callback'
+      preLoaderRoute: typeof ApiPublicShopifyBillingCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/shopify/auth/install': {
       id: '/api/public/shopify/auth/install'
       path: '/api/public/shopify/auth/install'
@@ -614,6 +656,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWidgetIdRoute: ApiPublicWidgetIdRoute,
   ApiPublicShopifyAuthCallbackRoute: ApiPublicShopifyAuthCallbackRoute,
   ApiPublicShopifyAuthInstallRoute: ApiPublicShopifyAuthInstallRoute,
+  ApiPublicShopifyBillingCallbackRoute: ApiPublicShopifyBillingCallbackRoute,
+  ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute:
+    ApiPublicShopifyWebhooksAppSubscriptionsUpdateRoute,
   ApiPublicShopifyWebhooksAppUninstalledRoute:
     ApiPublicShopifyWebhooksAppUninstalledRoute,
   ApiPublicShopifyWebhooksCollectionsUpdateRoute:

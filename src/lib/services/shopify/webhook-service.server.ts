@@ -6,6 +6,7 @@ import type { ShopifyAdminClient } from "./admin-client.server";
 
 const WEBHOOK_TOPICS = [
   "APP_UNINSTALLED",
+  "APP_SUBSCRIPTIONS_UPDATE",
   "PRODUCTS_UPDATE",
   "COLLECTIONS_UPDATE",
   "CUSTOMERS_DATA_REQUEST",

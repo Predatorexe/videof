@@ -52,12 +52,13 @@ interface WebhookRegistration {
 }
 
 const MANDATORY_WEBHOOKS: WebhookRegistration[] = [
-  { topic: "APP_UNINSTALLED",         path: "/api/public/shopify/webhooks/app-uninstalled" },
-  { topic: "PRODUCTS_UPDATE",         path: "/api/public/shopify/webhooks/products-update" },
-  { topic: "COLLECTIONS_UPDATE",      path: "/api/public/shopify/webhooks/collections-update" },
-  { topic: "CUSTOMERS_DATA_REQUEST",  path: "/api/public/shopify/webhooks/customers-data-request" },
-  { topic: "CUSTOMERS_REDACT",        path: "/api/public/shopify/webhooks/customers-redact" },
-  { topic: "SHOP_REDACT",             path: "/api/public/shopify/webhooks/shop-redact" },
+  { topic: "APP_UNINSTALLED",           path: "/api/public/shopify/webhooks/app-uninstalled" },
+  { topic: "APP_SUBSCRIPTIONS_UPDATE",  path: "/api/public/shopify/webhooks/app-subscriptions-update" },
+  { topic: "PRODUCTS_UPDATE",           path: "/api/public/shopify/webhooks/products-update" },
+  { topic: "COLLECTIONS_UPDATE",        path: "/api/public/shopify/webhooks/collections-update" },
+  { topic: "CUSTOMERS_DATA_REQUEST",    path: "/api/public/shopify/webhooks/customers-data-request" },
+  { topic: "CUSTOMERS_REDACT",          path: "/api/public/shopify/webhooks/customers-redact" },
+  { topic: "SHOP_REDACT",               path: "/api/public/shopify/webhooks/shop-redact" },
 ];
 
 export const Route = createFileRoute("/api/public/shopify/auth/callback")({
