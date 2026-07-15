@@ -31,7 +31,10 @@ import { useProductsStore } from "@/stores/products-store";
 import { useVideosStore } from "@/stores/videos-store";
 import { useUiStore } from "@/stores/ui-store";
 import { useActivityStore } from "@/stores/activity-store";
-import { apiCall, withRetry } from "@/lib/mock-api";
+import { syncAllShopifyData } from "@/lib/api/shopify-sync.functions";
+import { useShopStore } from "@/stores/shop-store";
+import { useCollectionsStore } from "@/stores/collections-store";
+import { useCustomersStore } from "@/stores/customers-store";
 import { exportCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/products")({
@@ -81,9 +84,15 @@ function ProductsPage() {
   const doSync = async () => {
     setSyncing(true);
     try {
-      await withRetry(() => apiCall({ minDelay: 600, maxDelay: 1400, failureRate: 0.15 }), {
-        retries: 2,
-      });
+      await syncAllShopifyData();
+      const shopId = useShopStore.getState().shop?.id;
+      if (shopId) {
+        await Promise.all([
+          useProductsStore.getState().hydrate(shopId),
+          useCollectionsStore.getState().hydrate(shopId),
+          useCustomersStore.getState().hydrate(shopId),
+        ]);
+      }
       log("import", "Catalog synced");
       toast.success("Catalog synced");
     } catch (err) {
