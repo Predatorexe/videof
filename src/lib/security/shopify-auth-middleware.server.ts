@@ -187,14 +187,19 @@ export const requireShopifyOrSupabaseAuth = createMiddleware({ type: "function" 
     if (error || !data?.claims?.sub) {
       throw new Error("Unauthorized: Invalid token");
     }
-    return next({
-      context: {
-        supabase,
-        userId: data.claims.sub as string,
-        shopId: undefined as string | undefined,
-        shopDomain: undefined as string | undefined,
-        claims: data.claims,
-      },
-    });
+    const fallbackContext: {
+      supabase: ServerSupabase;
+      userId: string;
+      shopId: string | undefined;
+      shopDomain: string | undefined;
+      claims: Record<string, unknown>;
+    } = {
+      supabase,
+      userId: data.claims.sub as string,
+      shopId: undefined,
+      shopDomain: undefined,
+      claims: data.claims as unknown as Record<string, unknown>,
+    };
+    return next({ context: fallbackContext });
   },
 );
