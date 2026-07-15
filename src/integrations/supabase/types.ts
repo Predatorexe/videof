@@ -484,6 +484,7 @@ export type Database = {
           handle: string | null
           id: string
           image_url: string | null
+          inventory: number
           metadata: Json | null
           price_max: number | null
           price_min: number | null
@@ -503,6 +504,7 @@ export type Database = {
           handle?: string | null
           id?: string
           image_url?: string | null
+          inventory?: number
           metadata?: Json | null
           price_max?: number | null
           price_min?: number | null
@@ -522,6 +524,7 @@ export type Database = {
           handle?: string | null
           id?: string
           image_url?: string | null
+          inventory?: number
           metadata?: Json | null
           price_max?: number | null
           price_min?: number | null
@@ -819,6 +822,7 @@ export type Database = {
       }
       videos: {
         Row: {
+          click_count: number
           created_at: string
           description: string | null
           duration_seconds: number | null
@@ -842,6 +846,7 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          click_count?: number
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -865,6 +870,7 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          click_count?: number
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -980,6 +986,7 @@ export type Database = {
           handle: string
           id: string
           name: string
+          publish_meta: Json
           published_version_id: string | null
           shop_id: string
           status: Database["public"]["Enums"]["widget_status"]
@@ -994,6 +1001,7 @@ export type Database = {
           handle: string
           id?: string
           name: string
+          publish_meta?: Json
           published_version_id?: string | null
           shop_id: string
           status?: Database["public"]["Enums"]["widget_status"]
@@ -1008,6 +1016,7 @@ export type Database = {
           handle?: string
           id?: string
           name?: string
+          publish_meta?: Json
           published_version_id?: string | null
           shop_id?: string
           status?: Database["public"]["Enums"]["widget_status"]
