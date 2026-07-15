@@ -574,6 +574,27 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          shop_domain: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          shop_domain: string
+          state: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          shop_domain?: string
+          state?: string
+        }
+        Relationships: []
+      }
       shop_settings: {
         Row: {
           accent_color: string | null
