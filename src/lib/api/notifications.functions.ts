@@ -1,7 +1,7 @@
 /** Notifications server functions. */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
 import { notificationCreateSchema, uuid } from "@/lib/validation/schemas";
 
 export const listNotifications = createServerFn({ method: "GET" })

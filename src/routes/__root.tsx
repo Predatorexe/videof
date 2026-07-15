@@ -5,6 +5,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  redirect,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -68,7 +69,24 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const SHOPIFY_API_KEY = (import.meta.env.VITE_SHOPIFY_API_KEY ?? "") as string;
+const SHOP_HOST_RE = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i;
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: ({ location }) => {
+    // When Shopify (or a merchant) opens the app URL with ?shop=<shop>.myshopify.com
+    // but WITHOUT a `host` param, the app has not been embedded yet — kick off
+    // OAuth. Once installed, Shopify re-opens the app with both `shop` and
+    // `host` set, and this guard becomes a no-op.
+    const search = (location.search ?? {}) as Record<string, unknown>;
+    const shop = typeof search.shop === "string" ? search.shop : undefined;
+    const host = typeof search.host === "string" ? search.host : undefined;
+    if (shop && !host && SHOP_HOST_RE.test(shop)) {
+      throw redirect({
+        href: `/api/public/shopify/auth/install?shop=${encodeURIComponent(shop)}`,
+      });
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -91,6 +109,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "The video commerce operating system for modern brands." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ec96e621-0871-4504-ab3c-1c7d5f1e8385/id-preview-74024509--7feba8cc-051c-4099-a617-251ef709612c.lovable.app-1783976339809.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ec96e621-0871-4504-ab3c-1c7d5f1e8385/id-preview-74024509--7feba8cc-051c-4099-a617-251ef709612c.lovable.app-1783976339809.png" },
+      // Shopify App Bridge: the api-key meta MUST be in the initial HTML
+      // <head>, before any admin iframe navigation. VITE_SHOPIFY_API_KEY is
+      // inlined at build time.
+      ...(SHOPIFY_API_KEY
+        ? [{ name: "shopify-api-key", content: SHOPIFY_API_KEY }]
+        : []),
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -101,6 +125,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap",
       },
+    ],
+    scripts: [
+      // Official App Bridge CDN script — loaded from <head> so
+      // `window.shopify` is available on first paint. When the API key is
+      // not configured (Lovable preview, standalone dashboard), skip it.
+      ...(SHOPIFY_API_KEY
+        ? [{ src: "https://cdn.shopify.com/shopifycloud/app-bridge.js" }]
+        : []),
     ],
   }),
   shellComponent: RootShell,

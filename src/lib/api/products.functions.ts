@@ -1,7 +1,7 @@
 /** Products server functions. */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
 import { productCreateSchema, listQuerySchema, uuid } from "@/lib/validation/schemas";
 import { normalizePagination } from "@/lib/types";
 

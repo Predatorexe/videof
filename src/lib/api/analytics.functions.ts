@@ -1,7 +1,7 @@
 /** Analytics server functions — reporting only (ingestion is via /api/public/analytics/track). */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
 import { AnalyticsService } from "@/lib/services/analytics/analytics-service.server";
 import { uuid } from "@/lib/validation/schemas";
 
