@@ -6,7 +6,6 @@ type UiState = {
   createWidgetOpen: boolean;
   createProductOpen: boolean;
   createCollectionOpen: boolean;
-  updateCardOpen: boolean;
   sidebarCollapsed: boolean;
   sidebarMobileOpen: boolean;
   setSearchOpen: (o: boolean) => void;
@@ -14,7 +13,6 @@ type UiState = {
   setCreateWidgetOpen: (o: boolean) => void;
   setCreateProductOpen: (o: boolean) => void;
   setCreateCollectionOpen: (o: boolean) => void;
-  setUpdateCardOpen: (o: boolean) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (c: boolean) => void;
   setSidebarMobileOpen: (o: boolean) => void;
@@ -27,7 +25,6 @@ export const useUiStore = create<UiState>((set) => ({
   createWidgetOpen: false,
   createProductOpen: false,
   createCollectionOpen: false,
-  updateCardOpen: false,
   sidebarCollapsed: true,
   sidebarMobileOpen: false,
   setSearchOpen: (o) => set({ searchOpen: o }),
@@ -35,7 +32,6 @@ export const useUiStore = create<UiState>((set) => ({
   setCreateWidgetOpen: (o) => set({ createWidgetOpen: o }),
   setCreateProductOpen: (o) => set({ createProductOpen: o }),
   setCreateCollectionOpen: (o) => set({ createCollectionOpen: o }),
-  setUpdateCardOpen: (o) => set({ updateCardOpen: o }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSidebarCollapsed: (c) => set({ sidebarCollapsed: c }),
   setSidebarMobileOpen: (o) => set({ sidebarMobileOpen: o }),
