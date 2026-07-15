@@ -24,11 +24,39 @@ export const markNotificationRead = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const markAllNotificationsRead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ shopId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("notifications")
+      .update({ read_at: new Date().toISOString() } as never)
+      .eq("shop_id", data.shopId).is("read_at", null);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
+export const dismissNotification = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("notifications").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
+export const clearAllNotifications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ shopId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("notifications").delete().eq("shop_id", data.shopId);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
 export const createNotification = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => notificationCreateSchema.parse(d))
   .handler(async ({ data, context }) => {
-    // Only admins/owners of the shop may create notifications on behalf of others.
     const { data: hasAccess } = await context.supabase.rpc("has_shop_access", {
       _user_id: context.userId, _shop_id: data.shopId,
     });
