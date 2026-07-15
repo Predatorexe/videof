@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { useShopStore } from "@/stores/shop-store";
 import { getCurrentShop } from "@/lib/api/shop.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 declare global {
   interface Window {
