@@ -40,6 +40,9 @@ function Dashboard() {
   const activity = useActivityStore((s) => s.entries);
   const profile = useProfileStore((s) => s.profile);
   const openUpload = useUiStore((s) => s.setUploadVideoOpen);
+  const viewsTrend = useAnalyticsStore((s) => s.viewsSeries);
+  const revenueTrend = useAnalyticsStore((s) => s.revenueSeries);
+  const trafficSources = useAnalyticsStore((s) => s.trafficSources);
 
   const totals = useMemo(() => {
     const views = videos.reduce((s, v) => s + v.views, 0);
@@ -58,7 +61,7 @@ function Dashboard() {
     [widgets],
   );
 
-  const viewsTotal = useMemo(() => viewsTrend.reduce((s, x) => s + x.views, 0), []);
+  const viewsTotal = useMemo(() => viewsTrend.reduce((s, x) => s + x.views, 0), [viewsTrend]);
 
   return (
     <PageShell
