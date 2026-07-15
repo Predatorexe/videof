@@ -12,13 +12,11 @@
  * external ID, so the local mirror converges to Shopify's state.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { getWebRequest } from "@tanstack/react-start/server";
-import {
-  ShopifyProductService,
-  ShopifyCollectionService,
-  ShopifyCustomerService,
-  ShopifyOrderService,
-} from "@/lib/services/shopify";
+import { getRequest } from "@tanstack/react-start/server";
+import { ShopifyProductService } from "@/lib/services/shopify/product-service.server";
+import { ShopifyCollectionService } from "@/lib/services/shopify/collection-service.server";
+import { ShopifyCustomerService } from "@/lib/services/shopify/customer-service.server";
+import { ShopifyOrderService } from "@/lib/services/shopify/order-service.server";
 import { requireShopContext } from "@/lib/services/shopify/shop-context.server";
 import { logger } from "@/lib/logger";
 
