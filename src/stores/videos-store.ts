@@ -35,6 +35,7 @@ type State = {
   trackView: (id: string) => void;
   trackClick: (id: string) => void;
   createFromUpload: (input: { title: string; size: number; durationSeconds: number }) => Video;
+  applyServerRow: (row: VideoRow, replaceId?: string) => Video;
   hydrate: (shopId: string) => Promise<void>;
 };
 
