@@ -160,6 +160,7 @@ function RootComponent() {
         </div>
       </div>
       <Toaster />
+      <ShopifyAppBridge />
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
       <UploadVideoDialog />
       <CreateWidgetDialog open={createWidgetOpen} onOpenChange={setCreateWidgetOpen} />
