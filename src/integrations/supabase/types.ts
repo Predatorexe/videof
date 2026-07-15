@@ -315,6 +315,56 @@ export type Database = {
           },
         ]
       }
+      gdpr_requests: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_shopify_id: string | null
+          id: string
+          payload: Json
+          received_at: string
+          shop_domain: string
+          shop_id: string | null
+          status: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_shopify_id?: string | null
+          id?: string
+          payload: Json
+          received_at?: string
+          shop_domain: string
+          shop_id?: string | null
+          status?: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_shopify_id?: string | null
+          id?: string
+          payload?: Json
+          received_at?: string
+          shop_domain?: string
+          shop_id?: string | null
+          status?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gdpr_requests_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number

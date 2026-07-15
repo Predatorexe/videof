@@ -82,12 +82,12 @@ export type BillingState = {
   setAutoRenew: (v: boolean) => void;
   setUsage: (used: number) => void;
   addImpressions: (delta: number) => void;
-  updatePayment: (input: { brand: string; last4: string }) => void;
+  
   hydrate: (shopId: string) => Promise<void>;
 };
 
 const DEFAULT: Omit<BillingState,
-  "setPlan" | "setAutoRenew" | "setUsage" | "addImpressions" | "updatePayment" | "hydrate"
+  "setPlan" | "setAutoRenew" | "setUsage" | "addImpressions" | "hydrate"
 > = {
   currentPlanId: "growth",
   usedThisMonth: 24_820,
@@ -153,7 +153,6 @@ export const useBillingStore = create<BillingState>((set, get) => ({
   setUsage: (used) => set({ usedThisMonth: used }),
   addImpressions: (delta) =>
     set((s) => ({ usedThisMonth: s.usedThisMonth + delta, usedToday: s.usedToday + delta })),
-  updatePayment: ({ brand, last4 }) => set({ paymentBrand: brand, paymentLast4: last4 }),
 }));
 
 subscribeShopHydration({

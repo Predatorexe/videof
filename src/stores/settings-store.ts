@@ -78,8 +78,8 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
 };
 const DEFAULT_SECURITY: SecuritySettings = { twoFactor: true, requireSso: false };
 const DEFAULT_API: ApiSettings = {
-  publishableKey: "vf_pub_9a4c2e1f_placeholder",
-  secretKey: "vf_sk_••••••••••••••••",
+  publishableKey: "",
+  secretKey: "",
   webhookEndpoint: "",
 };
 

@@ -19,6 +19,7 @@ import { useUiStore } from "@/stores/ui-store";
 import { useShopStore } from "@/stores/shop-store";
 import { initiateVideoUpload, finalizeVideoUpload } from "@/lib/api/videos.functions";
 import type { VideoRow } from "@/lib/adapters/videos";
+import { withRetry } from "@/lib/retry";
 
 const MAX_BYTES = 500 * 1024 * 1024; // 500 MB
 const ACCEPT = ["video/mp4", "video/quicktime", "video/webm"];
@@ -133,7 +134,10 @@ export function UploadVideoDialog() {
       await promise;
       xhrsRef.current.delete(item.id);
 
-      const finalized = (await finalizeVideoUpload({ data: { id: row.id } })) as VideoRow;
+      const finalized = (await withRetry(
+        () => finalizeVideoUpload({ data: { id: row.id } }),
+        { retries: 4, baseMs: 800, maxMs: 12_000 },
+      )) as VideoRow;
       const v = applyServerRow(finalized, row.id);
       log("upload", "Video uploaded", v.title);
       notify({
