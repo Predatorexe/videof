@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/public/shopify/webhooks/customers-dat
           topic: "customers/data_request",
           customer_shopify_id: v.payload.customer?.id ? String(v.payload.customer.id) : null,
           customer_email: v.payload.customer?.email ?? null,
-          payload: v.payload as unknown as Record<string, unknown>,
+          payload: (v.payload ?? {}) as never,
           status: "received",
         });
         if (error) {
