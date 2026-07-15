@@ -167,7 +167,7 @@ function RootComponent() {
         open={createCollectionOpen}
         onOpenChange={setCreateCollectionOpen}
       />
-      <UpdateCardDialog open={updateCardOpen} onOpenChange={setUpdateCardOpen} />
+      
     </QueryClientProvider>
   );
 }
