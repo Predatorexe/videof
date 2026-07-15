@@ -84,9 +84,15 @@ function ProductsPage() {
   const doSync = async () => {
     setSyncing(true);
     try {
-      await withRetry(() => apiCall({ minDelay: 600, maxDelay: 1400, failureRate: 0.15 }), {
-        retries: 2,
-      });
+      await syncAllShopifyData();
+      const shopId = useShopStore.getState().shop?.id;
+      if (shopId) {
+        await Promise.all([
+          useProductsStore.getState().hydrate(shopId),
+          useCollectionsStore.getState().hydrate(shopId),
+          useCustomersStore.getState().hydrate(shopId),
+        ]);
+      }
       log("import", "Catalog synced");
       toast.success("Catalog synced");
     } catch (err) {
