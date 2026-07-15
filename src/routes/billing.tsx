@@ -53,14 +53,11 @@ function BillingPage() {
   };
 
   /**
-   * Upgrade hand-off.
-   *
-   * TODO(shopify-billing): replace this handler with a call to the Shopify
-   * Billing API. The app should request an AppSubscription for the selected
-   * plan via GraphQL (`appSubscriptionCreate`), then redirect the merchant
-   * to the returned `confirmationUrl` so Shopify can collect approval and
-   * process the charge. On return, the app receives an activation callback
-   * and should update the local `currentPlanId` from the confirmed charge.
+   * Upgrade hand-off. Optimistically flips the local plan, then dispatches
+   * `initiatePlanChange` (server-fn → Shopify `appSubscriptionCreate`). If a
+   * `confirmationUrl` comes back, the billing store redirects the merchant
+   * to Shopify's approval screen; the APP_SUBSCRIPTIONS_UPDATE webhook and
+   * the return callback reconcile the row on activation.
    */
   const requestPlanChange = (id: PlanId) => {
     if (id === currentPlanId) return;
