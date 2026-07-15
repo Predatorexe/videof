@@ -133,8 +133,6 @@ function RootComponent() {
   const setCreateProductOpen = useUiStore((s) => s.setCreateProductOpen);
   const createCollectionOpen = useUiStore((s) => s.createCollectionOpen);
   const setCreateCollectionOpen = useUiStore((s) => s.setCreateCollectionOpen);
-  const updateCardOpen = useUiStore((s) => s.updateCardOpen);
-  const setUpdateCardOpen = useUiStore((s) => s.setUpdateCardOpen);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
