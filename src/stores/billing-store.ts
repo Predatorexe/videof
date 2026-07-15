@@ -82,7 +82,7 @@ export type BillingState = {
   setAutoRenew: (v: boolean) => void;
   setUsage: (used: number) => void;
   addImpressions: (delta: number) => void;
-  updatePayment: (input: { brand: string; last4: string }) => void;
+  
   hydrate: (shopId: string) => Promise<void>;
 };
 
