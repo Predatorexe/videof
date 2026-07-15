@@ -202,6 +202,16 @@ export const useVideosStore = create<State>((set, get) => ({
     }
     return v;
   },
+
+  applyServerRow: (row, replaceId) => {
+    const v = videoFromRow(row);
+    set((s) => {
+      const filtered = replaceId ? s.items.filter((x) => x.id !== replaceId) : s.items;
+      const without = filtered.filter((x) => x.id !== v.id);
+      return { items: [v, ...without] };
+    });
+    return v;
+  },
 }));
 
 if (typeof window !== "undefined") {
