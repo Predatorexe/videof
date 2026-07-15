@@ -66,13 +66,21 @@ export async function getShopContextByDomain(domain: string): Promise<ShopContex
 /**
  * Resolve shop from an embedded-admin session token.
  * Returns null when no token is present (caller may fall back to dev mode).
+ *
+ * The token can arrive in either header:
+ *   - `X-Shopify-Session-Token` (preferred — set by our client middleware,
+ *     avoids collision with Supabase's Authorization bearer)
+ *   - `Authorization: Bearer <JWT>` (raw App Bridge fetch)
  */
 export async function getShopContextFromRequest(
   request: Request,
 ): Promise<ShopContext | null> {
-  const auth = request.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) return null;
-  const token = auth.slice("Bearer ".length).trim();
+  let token = request.headers.get("x-shopify-session-token")?.trim() ?? "";
+  if (!token) {
+    const auth = request.headers.get("authorization");
+    if (auth?.startsWith("Bearer ")) token = auth.slice("Bearer ".length).trim();
+  }
+  if (!token) return null;
   // A Shopify session token is a JWT (3 dot-separated segments). Anything
   // else is a Supabase bearer that another middleware handles.
   if (token.split(".").length !== 3) return null;
