@@ -9,11 +9,11 @@ import { ExternalServiceError, NotFoundError } from "@/lib/errors";
 
 export type Plan = "starter" | "growth" | "scale" | "enterprise";
 
-export const PLAN_LIMITS: Record<Plan, { impressions: number; priceUSD: number }> = {
-  starter: { impressions: 5_000, priceUSD: 0 },
-  growth: { impressions: 100_000, priceUSD: 29 },
-  scale: { impressions: 500_000, priceUSD: 99 },
-  enterprise: { impressions: 5_000_000, priceUSD: 499 },
+export const PLAN_LIMITS: Record<Plan, { impressions: number; priceUSD: number; displayName: string }> = {
+  starter:    { impressions: 5_000,     priceUSD: 15,  displayName: "Videofy Starter" },
+  growth:     { impressions: 20_000,    priceUSD: 25,  displayName: "Videofy Growth" },
+  scale:      { impressions: 60_000,    priceUSD: 60,  displayName: "Videofy Scale" },
+  enterprise: { impressions: 5_000_000, priceUSD: 499, displayName: "Videofy Enterprise" },
 };
 
 export class BillingService {

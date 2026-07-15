@@ -22,6 +22,9 @@ export function serverEnv() {
     SHOPIFY_SCOPES: process.env.SHOPIFY_SCOPES,
     SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION ?? "2025-01",
     SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
+    // When "true", app subscriptions are created as Shopify test charges.
+    // Development stores must use test charges or Shopify rejects them.
+    SHOPIFY_BILLING_TEST: process.env.SHOPIFY_BILLING_TEST,
 
     // Media providers (any one is enough).
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
