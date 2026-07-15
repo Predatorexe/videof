@@ -81,7 +81,11 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next, reque
   // Baseline headers applied to every response.
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.headers.set("X-Frame-Options", "SAMEORIGIN");
+  // X-Frame-Options is a legacy header — CSP frame-ancestors below is the
+  // modern equivalent and Shopify requires the app to be embeddable inside
+  // https://admin.shopify.com and https://*.myshopify.com. Setting
+  // X-Frame-Options: SAMEORIGIN here would block that embed in some
+  // browsers, so we intentionally omit it and rely on frame-ancestors.
   res.headers.set(
     "Strict-Transport-Security",
     "max-age=63072000; includeSubDomains; preload",
