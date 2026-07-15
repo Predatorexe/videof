@@ -1,6 +1,6 @@
 /** Profile server functions. */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
 import { profileUpdateSchema } from "@/lib/validation/schemas";
 
 export const getProfile = createServerFn({ method: "GET" })

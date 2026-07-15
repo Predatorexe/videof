@@ -4,7 +4,7 @@
  * membership (falls back to first shop the user has any role on).
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
 
 export const getCurrentShop = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
