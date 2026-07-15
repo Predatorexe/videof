@@ -696,46 +696,61 @@ export type Database = {
       subscriptions: {
         Row: {
           created_at: string
+          currency_code: string | null
           current_period_end: string | null
           current_period_start: string | null
           id: string
           impression_limit: number | null
           impression_used: number | null
           overage_impressions: number | null
+          pending_charge_id: string | null
+          pending_confirmation_url: string | null
+          pending_plan: Database["public"]["Enums"]["subscription_plan"] | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           shop_id: string
           shopify_charge_id: string | null
           status: Database["public"]["Enums"]["subscription_status"]
+          test_charge: boolean
           trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          currency_code?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
           impression_limit?: number | null
           impression_used?: number | null
           overage_impressions?: number | null
+          pending_charge_id?: string | null
+          pending_confirmation_url?: string | null
+          pending_plan?: Database["public"]["Enums"]["subscription_plan"] | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           shop_id: string
           shopify_charge_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
+          test_charge?: boolean
           trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          currency_code?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
           impression_limit?: number | null
           impression_used?: number | null
           overage_impressions?: number | null
+          pending_charge_id?: string | null
+          pending_confirmation_url?: string | null
+          pending_plan?: Database["public"]["Enums"]["subscription_plan"] | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           shop_id?: string
           shopify_charge_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
+          test_charge?: boolean
           trial_ends_at?: string | null
           updated_at?: string
         }
