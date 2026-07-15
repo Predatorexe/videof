@@ -40,7 +40,7 @@ interface AdminProduct {
 }
 
 export const syncShopifyProducts = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getWebRequest();
+  const request = getRequest();
   if (!request) throw new Error("No request context");
   const ctx = await requireShopContext(request);
   const service = new ShopifyProductService(ctx.admin);
@@ -98,7 +98,7 @@ interface AdminCollection {
 }
 
 export const syncShopifyCollections = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getWebRequest();
+  const request = getRequest();
   if (!request) throw new Error("No request context");
   const ctx = await requireShopContext(request);
   const service = new ShopifyCollectionService(ctx.admin);
@@ -151,7 +151,7 @@ interface AdminCustomer {
 }
 
 export const syncShopifyCustomers = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getWebRequest();
+  const request = getRequest();
   if (!request) throw new Error("No request context");
   const ctx = await requireShopContext(request);
   const service = new ShopifyCustomerService(ctx.admin);
@@ -216,7 +216,7 @@ interface AdminOrderNode {
 export const syncShopifyOrders = createServerFn({ method: "POST" })
   .inputValidator((input: { pages?: number; query?: string } | undefined) => input ?? {})
   .handler(async ({ data }) => {
-    const request = getWebRequest();
+    const request = getRequest();
     if (!request) throw new Error("No request context");
     const ctx = await requireShopContext(request);
     const service = new ShopifyOrderService(ctx.admin);
