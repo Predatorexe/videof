@@ -78,14 +78,40 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // but WITHOUT a `host` param, the app has not been embedded yet — kick off
     // OAuth. Once installed, Shopify re-opens the app with both `shop` and
     // `host` set, and this guard becomes a no-op.
+    //
+    // IMPORTANT: only trigger this on the SSR (initial) request. If we
+    // redirect from client-side navigation inside the Shopify admin iframe,
+    // the OAuth authorize page's X-Frame-Options blocks it and the merchant
+    // sees a blank iframe. On the server we also require the request not to
+    // be an iframe subresource so a stale ?shop= query never breaks embedded
+    // reloads.
+    if (typeof window !== "undefined") return;
     const search = (location.search ?? {}) as Record<string, unknown>;
     const shop = typeof search.shop === "string" ? search.shop : undefined;
     const host = typeof search.host === "string" ? search.host : undefined;
-    if (shop && !host && SHOP_HOST_RE.test(shop)) {
-      throw redirect({
-        href: `/api/public/shopify/auth/install?shop=${encodeURIComponent(shop)}`,
-      });
+    if (!shop || host || !SHOP_HOST_RE.test(shop)) return;
+
+    // Best-effort iframe detection via Sec-Fetch-Dest. When embedded, do
+    // nothing here — the App Bridge session-token path will authenticate
+    // subsequent server-fn calls, and re-auth (if the shop record is gone)
+    // is handled by a top-level breakout in the client.
+    try {
+      // Dynamic import so browser bundles don't try to resolve @tanstack/react-start/server.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { getRequest } = require("@tanstack/react-start/server") as {
+        getRequest: () => Request | undefined;
+      };
+      const req = getRequest();
+      const dest = req?.headers.get("sec-fetch-dest");
+      if (dest === "iframe" || dest === "frame") return;
+    } catch {
+      // If we can't inspect the request, err on the safe side and redirect —
+      // top-level browser hits (direct install link) are the common case.
     }
+
+    throw redirect({
+      href: `/api/public/shopify/auth/install?shop=${encodeURIComponent(shop)}`,
+    });
   },
   head: () => ({
     meta: [
