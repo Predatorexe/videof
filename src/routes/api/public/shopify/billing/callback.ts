@@ -127,7 +127,8 @@ export const Route = createFileRoute("/api/public/shopify/billing/callback")({
         }
 
         // Send the merchant back into the embedded admin billing page.
-        const target = `https://${shop}/admin/apps/${apiKey}/billing`;
+        const storeHandle = shop.slice(0, -".myshopify.com".length);
+        const target = `https://admin.shopify.com/store/${encodeURIComponent(storeHandle)}/apps/${apiKey}/billing`;
         return Response.redirect(target, 302);
       },
     },

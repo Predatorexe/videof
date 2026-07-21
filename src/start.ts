@@ -90,7 +90,10 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next, reque
     "Strict-Transport-Security",
     "max-age=63072000; includeSubDomains; preload",
   );
-  res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  // Embedded apps share a top-level browsing context with Shopify Admin.
+  // same-origin-allow-popups preserves that relationship while allowing
+  // Shopify-owned OAuth and billing confirmation windows to communicate.
+  res.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   res.headers.set("Permissions-Policy", PERMISSIONS_POLICY);
 
   // CSP only makes sense on HTML documents. JSON/beacon endpoints don't

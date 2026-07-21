@@ -59,9 +59,6 @@ export const Route = createFileRoute("/api/public/shopify/auth/install")({
         authorize.searchParams.set("scope", scopes);
         authorize.searchParams.set("redirect_uri", redirectUri);
         authorize.searchParams.set("state", state);
-        // Offline access token (long-lived) — required for background sync.
-        authorize.searchParams.set("grant_options[]", "");
-
         return Response.redirect(authorize.toString(), 302);
       },
     },
