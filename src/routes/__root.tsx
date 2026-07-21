@@ -7,6 +7,7 @@ import {
   Scripts,
   redirect,
 } from "@tanstack/react-router";
+import { getRequest } from "@tanstack/react-start/server";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -96,11 +97,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // subsequent server-fn calls, and re-auth (if the shop record is gone)
     // is handled by a top-level breakout in the client.
     try {
-      // Dynamic import so browser bundles don't try to resolve @tanstack/react-start/server.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { getRequest } = require("@tanstack/react-start/server") as {
-        getRequest: () => Request | undefined;
-      };
       const req = getRequest();
       const dest = req?.headers.get("sec-fetch-dest");
       if (dest === "iframe" || dest === "frame") return;
