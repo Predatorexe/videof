@@ -8,14 +8,17 @@ import { uuid } from "@/lib/validation/schemas";
 import { UnauthorizedError, NotFoundError, ExternalServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 
+import { assertShopAccess } from "@/lib/security/authorize.server";
+
 export const getBillingOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ shopId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertShopAccess(context, data.shopId);
     const svc = new BillingService(context.supabase);
     const [subscription, invoices] = await Promise.all([
-      svc.getSubscription(data.shopId),
-      svc.listInvoices(data.shopId),
+      svc.getSubscription(shopId),
+      svc.listInvoices(shopId),
     ]);
     return { subscription, invoices, plans: PLAN_LIMITS };
   });

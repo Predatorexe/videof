@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
+import { assertShopAccess, assertRecordShop } from "@/lib/security/authorize.server";
 import { VideoPipelineService } from "@/lib/services/video/pipeline.server";
 import { videoCreateSchema, videoUpdateSchema, listQuerySchema, uuid } from "@/lib/validation/schemas";
 import { normalizePagination } from "@/lib/types";
@@ -10,11 +11,12 @@ export const listVideos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => listQuerySchema.extend({ shopId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertShopAccess(context, data.shopId);
     const { page, pageSize } = normalizePagination(data);
     const from = (page - 1) * pageSize;
     let q = context.supabase.from("videos")
       .select("*, video_products(product_id)", { count: "exact" })
-      .eq("shop_id", data.shopId)
+      .eq("shop_id", shopId)
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1);
     if (data.search) q = q.ilike("title", `%${data.search}%`);
@@ -33,9 +35,10 @@ export const initiateVideoUpload = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    const shopId = await assertShopAccess(context, data.shopId);
     const svc = new VideoPipelineService(context.supabase);
     return svc.initiateUpload({
-      shopId: data.shopId,
+      shopId,
       title: data.title,
       description: data.description,
       filename: data.filename,
@@ -49,6 +52,7 @@ export const finalizeVideoUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertRecordShop(context, "videos", data.id);
     const svc = new VideoPipelineService(context.supabase);
     await svc.markUploaded(data.id);
     return svc.syncFromProvider(data.id);
@@ -58,12 +62,14 @@ export const updateVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => videoUpdateSchema.parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertRecordShop(context, "videos", data.id);
     const { id, ...patch } = data;
     const row: Record<string, unknown> = {};
     if (patch.title) row.title = patch.title;
     if (patch.description !== undefined) row.description = patch.description;
     if (patch.tags) row.tags = patch.tags;
-    const { data: updated, error } = await context.supabase.from("videos").update(row as never).eq("id", id).select().single();
+    const { data: updated, error } = await context.supabase.from("videos")
+      .update(row as never).eq("id", id).eq("shop_id", shopId).select().single();
     if (error) throw new Error(error.message);
     return updated;
   });
@@ -72,6 +78,7 @@ export const deleteVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertRecordShop(context, "videos", data.id);
     const svc = new VideoPipelineService(context.supabase);
     return svc.remove(data.id);
   });
@@ -84,6 +91,15 @@ export const assignProductsToVideo = createServerFn({ method: "POST" })
     productIds: z.array(uuid).max(200),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertRecordShop(context, "videos", data.videoId);
+    if (data.productIds.length > 0) {
+      const { data: prods, error: pErr } = await context.supabase.from("products")
+        .select("id").eq("shop_id", shopId).in("id", data.productIds);
+      if (pErr) throw new Error(pErr.message);
+      if ((prods?.length ?? 0) !== data.productIds.length) {
+        throw new Error("Forbidden: one or more products are not in this shop");
+      }
+    }
     const del = await context.supabase.from("video_products").delete().eq("video_id", data.videoId);
     if (del.error) throw new Error(del.error.message);
     if (data.productIds.length === 0) return { ok: true as const };
@@ -102,14 +118,17 @@ export const trackVideoClick = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: cur } = await context.supabase.from("videos").select("click_count").eq("id", data.id).maybeSingle();
+    const shopId = await assertRecordShop(context, "videos", data.id);
+    const { data: cur } = await context.supabase.from("videos")
+      .select("click_count").eq("id", data.id).eq("shop_id", shopId).maybeSingle();
     const next = (cur?.click_count ?? 0) + 1;
-    const { error } = await context.supabase.from("videos").update({ click_count: next } as never).eq("id", data.id);
+    const { error } = await context.supabase.from("videos")
+      .update({ click_count: next } as never).eq("id", data.id).eq("shop_id", shopId);
     if (error) throw new Error(error.message);
     return { ok: true as const, clicks: next };
   });
 
-/** Append a tag to many videos. */
+/** Append a tag to many videos — all must belong to the caller's shop. */
 export const addTagToVideos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
@@ -117,14 +136,20 @@ export const addTagToVideos = createServerFn({ method: "POST" })
     tag: z.string().trim().min(1).max(40),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    // Anchor to the caller's shop via the first id, then require every row to match.
+    const anchorShop = await assertRecordShop(context, "videos", data.ids[0]);
     const { data: rows, error: readErr } = await context.supabase.from("videos")
-      .select("id, tags").in("id", data.ids);
+      .select("id, tags, shop_id").eq("shop_id", anchorShop).in("id", data.ids);
     if (readErr) throw new Error(readErr.message);
+    if ((rows?.length ?? 0) !== data.ids.length) {
+      throw new Error("Forbidden: one or more videos are not in this shop");
+    }
     for (const row of rows ?? []) {
       const current = (row.tags ?? []) as string[];
       if (current.includes(data.tag)) continue;
       const { error } = await context.supabase.from("videos")
-        .update({ tags: [...current, data.tag] } as never).eq("id", row.id);
+        .update({ tags: [...current, data.tag] } as never)
+        .eq("id", row.id).eq("shop_id", anchorShop);
       if (error) throw new Error(error.message);
     }
     return { ok: true as const };
