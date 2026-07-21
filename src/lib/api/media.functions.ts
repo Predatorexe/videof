@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
+import { assertShopAccess, assertRecordShop } from "@/lib/security/authorize.server";
 import { uuid } from "@/lib/validation/schemas";
 
 export const listMedia = createServerFn({ method: "GET" })
@@ -11,8 +12,9 @@ export const listMedia = createServerFn({ method: "GET" })
     kind: z.enum(["video", "image", "thumbnail", "poster"]).optional(),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertShopAccess(context, data.shopId);
     let q = context.supabase.from("media_assets").select("*")
-      .eq("shop_id", data.shopId).order("created_at", { ascending: false });
+      .eq("shop_id", shopId).order("created_at", { ascending: false });
     if (data.kind) q = q.eq("kind", data.kind);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
@@ -23,7 +25,9 @@ export const deleteMedia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("media_assets").delete().eq("id", data.id);
+    const shopId = await assertRecordShop(context, "media_assets", data.id);
+    const { error } = await context.supabase.from("media_assets")
+      .delete().eq("id", data.id).eq("shop_id", shopId);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });

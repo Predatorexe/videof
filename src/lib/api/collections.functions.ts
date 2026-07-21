@@ -2,15 +2,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
+import { assertShopAccess, assertRecordShop } from "@/lib/security/authorize.server";
 import { collectionCreateSchema, uuid } from "@/lib/validation/schemas";
 
 export const listCollections = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ shopId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertShopAccess(context, data.shopId);
     const { data: rows, error } = await context.supabase.from("collections")
       .select("*, collection_products(count)")
-      .eq("shop_id", data.shopId).order("created_at", { ascending: false });
+      .eq("shop_id", shopId).order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -19,8 +21,9 @@ export const createCollection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => collectionCreateSchema.extend({ shopifyCollectionId: z.string().optional() }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertShopAccess(context, data.shopId);
     const { data: row, error } = await context.supabase.from("collections").insert({
-      shop_id: data.shopId,
+      shop_id: shopId,
       shopify_collection_id: data.shopifyCollectionId ?? `local-${Date.now()}`,
       title: data.title,
       handle: data.handle,
@@ -39,11 +42,12 @@ export const updateCollection = createServerFn({ method: "POST" })
     imageUrl: z.string().url().optional(),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertRecordShop(context, "collections", data.id);
     const row: Record<string, unknown> = {};
     if (data.title !== undefined) row.title = data.title;
     if (data.imageUrl !== undefined) row.image_url = data.imageUrl;
     const { data: updated, error } = await context.supabase.from("collections")
-      .update(row as never).eq("id", data.id).select().single();
+      .update(row as never).eq("id", data.id).eq("shop_id", shopId).select().single();
     if (error) throw new Error(error.message);
     return updated;
   });
@@ -55,6 +59,14 @@ export const assignProductsToCollection = createServerFn({ method: "POST" })
     productIds: z.array(uuid).min(1).max(500),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    const shopId = await assertRecordShop(context, "collections", data.collectionId);
+    // Every product must belong to the same shop.
+    const { data: prods, error: pErr } = await context.supabase.from("products")
+      .select("id").eq("shop_id", shopId).in("id", data.productIds);
+    if (pErr) throw new Error(pErr.message);
+    if ((prods?.length ?? 0) !== data.productIds.length) {
+      throw new Error("Forbidden: one or more products are not in this shop");
+    }
     const rows = data.productIds.map((product_id, position) => ({
       collection_id: data.collectionId, product_id, position,
     }));
@@ -68,7 +80,9 @@ export const deleteCollection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("collections").delete().eq("id", data.id);
+    const shopId = await assertRecordShop(context, "collections", data.id);
+    const { error } = await context.supabase.from("collections")
+      .delete().eq("id", data.id).eq("shop_id", shopId);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
