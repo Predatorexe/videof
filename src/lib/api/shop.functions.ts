@@ -9,6 +9,16 @@ import { requireShopifyOrSupabaseAuth as requireSupabaseAuth } from "@/lib/secur
 export const getCurrentShop = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    if (context.shopId) {
+      const { data, error } = await context.supabase
+        .from("shops")
+        .select("id, name, shopify_domain")
+        .eq("id", context.shopId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) return null;
+      return { id: data.id, name: data.name, domain: data.shopify_domain };
+    }
     const { data, error } = await context.supabase
       .from("user_roles")
       .select("shop_id, shops(id, name, shopify_domain)")

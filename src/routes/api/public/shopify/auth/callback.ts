@@ -227,7 +227,8 @@ export const Route = createFileRoute("/api/public/shopify/auth/callback")({
         }
 
         // 8) Return the merchant into the embedded admin.
-        const target = `https://${shop}/admin/apps/${apiKey}`;
+        const storeHandle = shop.slice(0, -".myshopify.com".length);
+        const target = `https://admin.shopify.com/store/${encodeURIComponent(storeHandle)}/apps/${apiKey}`;
         return Response.redirect(target, 302);
       },
     },

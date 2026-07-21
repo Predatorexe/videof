@@ -12,16 +12,37 @@
  * external ID, so the local mirror converges to Shopify's state.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { ShopifyProductService } from "@/lib/services/shopify/product-service.server";
 import { ShopifyCollectionService } from "@/lib/services/shopify/collection-service.server";
 import { ShopifyCustomerService } from "@/lib/services/shopify/customer-service.server";
 import { ShopifyOrderService } from "@/lib/services/shopify/order-service.server";
-import { requireShopContext } from "@/lib/services/shopify/shop-context.server";
+import { requireShopifyOrSupabaseAuth } from "@/lib/security/shopify-auth-middleware.server";
+import { ShopifyAdminClient } from "@/lib/services/shopify/admin-client.server";
+import { decryptToken } from "@/lib/security/token-crypto.server";
 import { withRetry } from "@/lib/retry";
 import { logger } from "@/lib/logger";
 
 const MAX_PAGES = 20; // Safety cap — 20 pages * 50/page = 1000 rows/call.
+
+async function getSyncContext(context: { shopId?: string; supabase: { from: (table: "shops") => any } }) {
+  if (!context.shopId) throw new Error("Unauthorized: Shopify session required");
+  const { data: shop, error } = await context.supabase
+    .from("shops")
+    .select("id, shopify_domain, access_token_encrypted, uninstalled_at")
+    .eq("id", context.shopId)
+    .maybeSingle();
+  if (error) throw new Error(`Shop lookup failed: ${error.message}`);
+  if (!shop || shop.uninstalled_at || !shop.access_token_encrypted) {
+    throw new Error("Unauthorized: Installed Shopify shop not available");
+  }
+  return {
+    shop,
+    admin: new ShopifyAdminClient({
+      shopifyDomain: shop.shopify_domain,
+      accessToken: decryptToken(shop.access_token_encrypted),
+    }),
+  };
+}
 
 // ---------------------------------------------------------------- products
 interface AdminProduct {
@@ -40,10 +61,10 @@ interface AdminProduct {
   tags: string[] | null;
 }
 
-export const syncShopifyProducts = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getRequest();
-  if (!request) throw new Error("No request context");
-  const ctx = await requireShopContext(request);
+export const syncShopifyProducts = createServerFn({ method: "POST" })
+  .middleware([requireShopifyOrSupabaseAuth])
+  .handler(async ({ context }) => {
+  const ctx = await getSyncContext(context);
   const service = new ShopifyProductService(ctx.admin);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -101,10 +122,10 @@ interface AdminCollection {
   image: { url: string | null } | null;
 }
 
-export const syncShopifyCollections = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getRequest();
-  if (!request) throw new Error("No request context");
-  const ctx = await requireShopContext(request);
+export const syncShopifyCollections = createServerFn({ method: "POST" })
+  .middleware([requireShopifyOrSupabaseAuth])
+  .handler(async ({ context }) => {
+  const ctx = await getSyncContext(context);
   const service = new ShopifyCollectionService(ctx.admin);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -157,10 +178,10 @@ interface AdminCustomer {
   tags: string[] | null;
 }
 
-export const syncShopifyCustomers = createServerFn({ method: "POST" }).handler(async () => {
-  const request = getRequest();
-  if (!request) throw new Error("No request context");
-  const ctx = await requireShopContext(request);
+export const syncShopifyCustomers = createServerFn({ method: "POST" })
+  .middleware([requireShopifyOrSupabaseAuth])
+  .handler(async ({ context }) => {
+  const ctx = await getSyncContext(context);
   const service = new ShopifyCustomerService(ctx.admin);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -224,11 +245,10 @@ interface AdminOrderNode {
 }
 
 export const syncShopifyOrders = createServerFn({ method: "POST" })
+  .middleware([requireShopifyOrSupabaseAuth])
   .inputValidator((input: { pages?: number; query?: string } | undefined) => input ?? {})
-  .handler(async ({ data }) => {
-    const request = getRequest();
-    if (!request) throw new Error("No request context");
-    const ctx = await requireShopContext(request);
+  .handler(async ({ data, context }) => {
+    const ctx = await getSyncContext(context);
     const service = new ShopifyOrderService(ctx.admin);
 
     let after: string | undefined;
@@ -256,11 +276,55 @@ export const syncShopifyOrders = createServerFn({ method: "POST" })
   });
 
 // ----------------------------------------------------------------- run-all
-export const syncAllShopifyData = createServerFn({ method: "POST" }).handler(async () => {
-  const [products, collections, customers] = await Promise.all([
-    syncShopifyProducts(),
-    syncShopifyCollections(),
-    syncShopifyCustomers(),
-  ]);
-  return { products, collections, customers };
-});
+export const syncAllShopifyData = createServerFn({ method: "POST" })
+  .middleware([requireShopifyOrSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ctx = await getSyncContext(context);
+    const productService = new ShopifyProductService(ctx.admin);
+    const collectionService = new ShopifyCollectionService(ctx.admin);
+    const customerService = new ShopifyCustomerService(ctx.admin);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const productsResult = await withRetry(() => productService.list(50));
+    const productRows = (productsResult as { products: { edges: Array<{ node: AdminProduct }> } }).products.edges.map(({ node }) => ({
+      shop_id: ctx.shop.id, shopify_product_id: node.id, handle: node.handle, title: node.title,
+      description: node.descriptionHtml, vendor: node.vendor, product_type: node.productType,
+      status: node.status?.toLowerCase() ?? null, image_url: node.featuredImage?.url ?? null,
+      price_min: node.priceRangeV2 ? Number(node.priceRangeV2.minVariantPrice.amount) : null,
+      price_max: node.priceRangeV2 ? Number(node.priceRangeV2.maxVariantPrice.amount) : null,
+      currency: node.priceRangeV2?.minVariantPrice.currencyCode ?? null, tags: node.tags ?? [],
+      updated_at: new Date().toISOString(),
+    }));
+    if (productRows.length) {
+      const { error } = await supabaseAdmin.from("products").upsert(productRows, { onConflict: "shop_id,shopify_product_id" });
+      if (error) throw new Error(`Product upsert failed: ${error.message}`);
+    }
+
+    const collectionsResult = await withRetry(() => collectionService.list(50));
+    const collectionRows = (collectionsResult as { collections: { edges: Array<{ node: AdminCollection }> } }).collections.edges.map(({ node }) => ({
+      shop_id: ctx.shop.id, shopify_collection_id: node.id, handle: node.handle, title: node.title,
+      description: node.description, image_url: node.image?.url ?? null, updated_at: new Date().toISOString(),
+    }));
+    if (collectionRows.length) {
+      const { error } = await supabaseAdmin.from("collections").upsert(collectionRows, { onConflict: "shop_id,shopify_collection_id" });
+      if (error) throw new Error(`Collection upsert failed: ${error.message}`);
+    }
+
+    const customersResult = await withRetry(() => customerService.list(50));
+    const customerRows = (customersResult as { customers: { edges: Array<{ node: AdminCustomer }> } }).customers.edges.map(({ node }) => ({
+      shop_id: ctx.shop.id, shopify_customer_id: node.id, email: node.email, first_name: node.firstName,
+      last_name: node.lastName, total_orders: Number(node.numberOfOrders ?? 0) || 0,
+      total_spent: node.amountSpent ? Number(node.amountSpent.amount) : 0,
+      currency: node.amountSpent?.currencyCode ?? null, tags: node.tags ?? [], updated_at: new Date().toISOString(),
+    }));
+    if (customerRows.length) {
+      const { error } = await supabaseAdmin.from("customers").upsert(customerRows, { onConflict: "shop_id,shopify_customer_id" });
+      if (error) throw new Error(`Customer upsert failed: ${error.message}`);
+    }
+
+    return {
+      products: { synced: productRows.length, pages: 1 },
+      collections: { synced: collectionRows.length, pages: 1 },
+      customers: { synced: customerRows.length, pages: 1 },
+    };
+  });

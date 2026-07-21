@@ -13,7 +13,7 @@
  * If either path returns null we let the app render its mock/empty state
  * (Lovable preview / signed-out visitors).
  */
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useShopStore } from "@/stores/shop-store";
 import { getCurrentShop } from "@/lib/api/shop.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,6 @@ declare global {
 }
 
 export function ShopifyAppBridge() {
-  const [, setReady] = useState(false);
   const setShop = useShopStore((s) => s.setShop);
   const setStatus = useShopStore((s) => s.setStatus);
 
@@ -49,7 +48,6 @@ export function ShopifyAppBridge() {
         const shop = await getCurrentShop();
         if (cancelled) return;
         setShop(shop);
-        setReady(true);
       } catch {
         if (!cancelled) setShop(null);
       }

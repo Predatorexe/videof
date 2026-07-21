@@ -25,6 +25,28 @@ import { logger } from "@/lib/logger";
 
 type ServerSupabase = SupabaseClient<Database>;
 
+type AuthContext = {
+  supabase: ServerSupabase;
+  userId: string;
+  shopId: string | undefined;
+  shopDomain: string | undefined;
+  claims: Record<string, unknown>;
+};
+
+export function requireContextShopId(
+  context: Pick<AuthContext, "shopId">,
+  requestedShopId?: string,
+): string {
+  if (!context.shopId) {
+    if (!requestedShopId) throw new Error("Unauthorized: No shop selected");
+    return requestedShopId;
+  }
+  if (requestedShopId && requestedShopId !== context.shopId) {
+    throw new Error("Forbidden: Shop does not match authenticated Shopify session");
+  }
+  return context.shopId;
+}
+
 function isNewSupabaseApiKey(v: string): boolean {
   return v.startsWith("sb_publishable_") || v.startsWith("sb_secret_");
 }
@@ -141,13 +163,7 @@ export const requireShopifyOrSupabaseAuth = createMiddleware({ type: "function" 
         session.shopDomain,
       );
 
-      const shopifyContext: {
-        supabase: ServerSupabase;
-        userId: string;
-        shopId: string | undefined;
-        shopDomain: string | undefined;
-        claims: Record<string, unknown>;
-      } = {
+      const shopifyContext: AuthContext = {
         supabase: supabaseAdmin as unknown as ServerSupabase,
         userId: ownerUserId,
         shopId: shopRow.id,
@@ -187,13 +203,7 @@ export const requireShopifyOrSupabaseAuth = createMiddleware({ type: "function" 
     if (error || !data?.claims?.sub) {
       throw new Error("Unauthorized: Invalid token");
     }
-    const fallbackContext: {
-      supabase: ServerSupabase;
-      userId: string;
-      shopId: string | undefined;
-      shopDomain: string | undefined;
-      claims: Record<string, unknown>;
-    } = {
+    const fallbackContext: AuthContext = {
       supabase,
       userId: data.claims.sub as string,
       shopId: undefined,

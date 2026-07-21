@@ -20,7 +20,7 @@ export function serverEnv() {
     SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
     SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
     SHOPIFY_SCOPES: process.env.SHOPIFY_SCOPES,
-    SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION ?? "2025-01",
+    SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION ?? "2026-04",
     SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
     // When "true", app subscriptions are created as Shopify test charges.
     // Development stores must use test charges or Shopify rejects them.
