@@ -41,27 +41,37 @@ export async function assertShopAccess(ctx: Ctx, shopId: string | undefined): Pr
  * Look up a record's `shop_id` and verify the caller has access to it.
  * Prevents cross-tenant access when handlers accept a bare record `id`.
  */
+export type ShopScopedTable =
+  | "products"
+  | "videos"
+  | "widgets"
+  | "collections"
+  | "customers"
+  | "media_assets"
+  | "notifications";
+
 export async function assertRecordShop(
   ctx: Ctx,
-  table:
-    | "products"
-    | "videos"
-    | "widgets"
-    | "collections"
-    | "customers"
-    | "media_assets"
-    | "notifications"
-    | "shop_settings"
-    | "subscriptions"
-    | "invoices",
+  table: ShopScopedTable,
   id: string,
 ): Promise<string> {
-  const { data, error } = await ctx.supabase
-    .from(table)
+  // Cast is safe: every table in ShopScopedTable has `id` and `shop_id`
+  // columns; the generated union type union'd across all tables loses the
+  // per-row shape so we narrow here.
+  const { data, error } = await (ctx.supabase.from(table) as unknown as {
+    select: (c: string) => {
+      eq: (c: string, v: string) => {
+        maybeSingle: () => Promise<{
+          data: { shop_id: string } | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  })
     .select("shop_id")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Not found");
-  return assertShopAccess(ctx, (data as { shop_id: string }).shop_id);
+  return assertShopAccess(ctx, data.shop_id);
 }

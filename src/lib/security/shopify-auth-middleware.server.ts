@@ -203,11 +203,26 @@ export const requireShopifyOrSupabaseAuth = createMiddleware({ type: "function" 
     if (error || !data?.claims?.sub) {
       throw new Error("Unauthorized: Invalid token");
     }
+    const userId = data.claims.sub as string;
+
+    // Resolve the caller's shopId from user_roles so downstream handlers can
+    // enforce tenant scoping without trusting a client-supplied shopId.
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("shop_id, shops(shopify_domain)")
+      .eq("user_id", userId)
+      .order("role", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const resolvedShopId = (roleRow as { shop_id?: string } | null)?.shop_id;
+    const resolvedShopDomain =
+      (roleRow as { shops?: { shopify_domain?: string } } | null)?.shops?.shopify_domain;
+
     const fallbackContext: AuthContext = {
       supabase,
-      userId: data.claims.sub as string,
-      shopId: undefined,
-      shopDomain: undefined,
+      userId,
+      shopId: resolvedShopId,
+      shopDomain: resolvedShopDomain,
       claims: data.claims as unknown as Record<string, unknown>,
     };
     return next({ context: fallbackContext });
