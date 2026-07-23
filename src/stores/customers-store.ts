@@ -28,7 +28,7 @@ async function safeRehydrate() {
 }
 
 export const useCustomersStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
   hydrate: async (shopId: string) => {
