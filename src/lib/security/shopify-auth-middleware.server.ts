@@ -148,14 +148,41 @@ export const requireShopifyOrSupabaseAuth = createMiddleware({ type: "function" 
       }
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: shopRow, error: shopErr } = await supabaseAdmin
+      let { data: shopRow, error: shopErr } = await supabaseAdmin
         .from("shops")
         .select("id, uninstalled_at")
         .eq("shopify_domain", session.shopDomain)
         .maybeSingle();
       if (shopErr) throw new Error(`Shop lookup failed: ${shopErr.message}`);
-      if (!shopRow) throw new Error(`Unauthorized: shop ${session.shopDomain} not installed`);
-      if (shopRow.uninstalled_at) throw new Error("Unauthorized: shop uninstalled");
+
+      // Managed install path: the merchant reaches the embedded app with a
+      // valid session token but the /callback OAuth flow never ran. Exchange
+      // the session token for an offline access token and provision the shop
+      // on-the-fly. Idempotent — safe to run every time the row is missing
+      // or was marked uninstalled.
+      if (!shopRow || shopRow.uninstalled_at) {
+        try {
+          const { provisionShopFromSessionToken } = await import(
+            "@/lib/services/shopify/token-exchange.server"
+          );
+          const provisioned = await provisionShopFromSessionToken({
+            shopDomain: session.shopDomain,
+            sessionToken: shopifyToken,
+            apiKey,
+            apiSecret,
+          });
+          shopRow = { id: provisioned.shopId, uninstalled_at: null };
+        } catch (err) {
+          logger.error("auth.shop_provision_failed", {
+            shopDomain: session.shopDomain,
+            message: err instanceof Error ? err.message : String(err),
+          });
+          throw new Error(
+            `Unauthorized: shop ${session.shopDomain} not installed`,
+          );
+        }
+      }
+
 
       const ownerUserId = await resolveOwnerUserId(
         supabaseAdmin as unknown as ServerSupabase,
