@@ -66,7 +66,7 @@ function reportError(scope: string, err: unknown) {
 }
 
 export const useProductsStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
 
