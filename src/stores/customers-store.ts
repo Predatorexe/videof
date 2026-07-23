@@ -59,5 +59,5 @@ export const useCustomersStore = create<State>((set, get) => ({
 
 subscribeShopHydration({
   hydrate: (shopId) => useCustomersStore.getState().hydrate(shopId),
-  reset: () => useCustomersStore.setState({ items: seed, _shopId: null, _hydrated: false }),
+  reset: () => useCustomersStore.setState({ items: [], _shopId: null, _hydrated: false }),
 });
