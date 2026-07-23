@@ -80,28 +80,22 @@ function isoDaysAgo(n: number): string {
 }
 
 export const useAnalyticsStore = create<State>((set, get) => ({
-  viewsSeries: seedViews,
-  revenueSeries: seedRevenue,
-  trafficSources: seedTraffic,
+  viewsSeries: [],
+  revenueSeries: [],
+  trafficSources: [],
   _shopId: null,
   _hydrated: false,
 
   hydrate: async (shopId: string) => {
     try {
-      // Pull ~12 months so the revenue bar chart has monthly buckets to
-      // aggregate; views chart uses the tail of the same range.
       const summary = await getAnalyticsSummary({
         data: { shopId, fromDay: isoDaysAgo(364), toDay: isoDaysAgo(0) },
       });
       const days = (summary.days ?? []) as SummaryDay[];
-      const views = toViewsSeries(days).slice(-28);
-      const revenue = toRevenueSeries(days);
       set({
-        viewsSeries: views.length > 0 ? views : seedViews,
-        revenueSeries: revenue.length > 0 ? revenue : seedRevenue,
-        // No traffic-source ingestion yet — keep the seed distribution so the
-        // panel doesn't render empty.
-        trafficSources: seedTraffic,
+        viewsSeries: toViewsSeries(days).slice(-28),
+        revenueSeries: toRevenueSeries(days),
+        trafficSources: [],
         _shopId: shopId,
         _hydrated: true,
       });
@@ -114,9 +108,9 @@ export const useAnalyticsStore = create<State>((set, get) => ({
 
   reset: () =>
     set({
-      viewsSeries: seedViews,
-      revenueSeries: seedRevenue,
-      trafficSources: seedTraffic,
+      viewsSeries: [],
+      revenueSeries: [],
+      trafficSources: [],
       _shopId: null,
       _hydrated: false,
     }),
