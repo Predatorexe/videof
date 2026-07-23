@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RateLimitError } from "@/lib/errors";
 
 const rpcMock = vi.fn();
 
@@ -7,10 +6,8 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: { rpc: (...args: unknown[]) => rpcMock(...args) },
 }));
 
-async function loadModule() {
-  vi.resetModules();
-  return await import("./rate-limit.server");
-}
+import { rateLimit } from "./rate-limit.server";
+import { RateLimitError } from "@/lib/errors";
 
 describe("rateLimit (Supabase-backed)", () => {
   beforeEach(() => {
