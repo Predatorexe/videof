@@ -12,7 +12,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { products as seed, type Product } from "@/lib/mock-data";
+import type { Product } from "@/lib/mock-data";
 import { newId } from "@/lib/mock-api";
 import { useShopStore, getShopId } from "@/stores/shop-store";
 import { productFromRow, type ProductRow } from "@/lib/adapters/products";
