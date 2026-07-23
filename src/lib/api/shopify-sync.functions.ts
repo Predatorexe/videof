@@ -155,7 +155,7 @@ export const syncShopifyCollections = createServerFn({ method: "POST" })
     if (rows.length) {
       const { error } = await supabaseAdmin
         .from("collections")
-        .upsert(rows, { onConflict: "shopify_collection_id" });
+        .upsert(rows, { onConflict: "shop_id,shopify_collection_id" });
       if (error) throw new Error(`Collection upsert failed: ${error.message}`);
       synced += rows.length;
     }
