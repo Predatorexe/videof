@@ -101,7 +101,7 @@ export const syncShopifyProducts = createServerFn({ method: "POST" })
     if (rows.length) {
       const { error } = await supabaseAdmin
         .from("products")
-        .upsert(rows, { onConflict: "shopify_product_id" });
+        .upsert(rows, { onConflict: "shop_id,shopify_product_id" });
       if (error) throw new Error(`Product upsert failed: ${error.message}`);
       synced += rows.length;
     }
