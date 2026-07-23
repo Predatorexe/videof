@@ -218,7 +218,7 @@ if (typeof window !== "undefined") {
   useShopStore.subscribe((state, prev) => {
     if (state.shop?.id !== prev.shop?.id) {
       if (state.shop?.id) void useVideosStore.getState().hydrate(state.shop.id);
-      else useVideosStore.setState({ _shopId: null, _hydrated: false, items: seed });
+      else useVideosStore.setState({ _shopId: null, _hydrated: false, items: [] });
     }
   });
 }
