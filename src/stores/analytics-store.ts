@@ -9,11 +9,8 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import {
-  revenueTrend as seedRevenue,
-  trafficSources as seedTraffic,
-  viewsTrend as seedViews,
-} from "@/lib/mock-data";
+// Analytics is fully backed by database aggregates via getAnalyticsSummary.
+// No demo/seed fallback — the dashboard renders empty until real events exist.
 import { getAnalyticsSummary } from "@/lib/api/analytics.functions";
 import { subscribeShopHydration } from "@/lib/adapters/shop-hydration";
 
