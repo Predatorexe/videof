@@ -7,7 +7,7 @@ import {
   Scripts,
   redirect,
 } from "@tanstack/react-router";
-import { getRequest } from "@tanstack/react-start/server";
+import { getSecFetchDest } from "@/lib/ssr/get-fetch-dest.server";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -96,14 +96,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // nothing here — the App Bridge session-token path will authenticate
     // subsequent server-fn calls, and re-auth (if the shop record is gone)
     // is handled by a top-level breakout in the client.
-    try {
-      const req = getRequest();
-      const dest = req?.headers.get("sec-fetch-dest");
-      if (dest === "iframe" || dest === "frame") return;
-    } catch {
-      // If we can't inspect the request, err on the safe side and redirect —
-      // top-level browser hits (direct install link) are the common case.
-    }
+    const dest = getSecFetchDest();
+    if (dest === "iframe" || dest === "frame") return;
 
     throw redirect({
       href: `/api/public/shopify/auth/install?shop=${encodeURIComponent(shop)}`,
