@@ -55,7 +55,7 @@ function reportError(scope: string, err: unknown) {
 }
 
 export const useVideosStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
 
