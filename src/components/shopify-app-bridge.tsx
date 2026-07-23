@@ -66,7 +66,16 @@ export function ShopifyAppBridge() {
  * hitting our own serverFn endpoints.
  */
 export async function getShopifySessionToken(): Promise<string | null> {
-  if (typeof window === "undefined" || !window.shopify?.idToken) return null;
+  if (typeof window === "undefined") return null;
+  // App Bridge's CDN script is loaded from <head> but may not have executed
+  // by the time the first serverFn RPC fires (React hydrates fast). Poll for
+  // `window.shopify.idToken` for a short window before giving up so we don't
+  // send an unauthenticated request from inside the Shopify admin iframe.
+  const deadline = Date.now() + 5000;
+  while (!window.shopify?.idToken) {
+    if (Date.now() > deadline) return null;
+    await new Promise((r) => setTimeout(r, 50));
+  }
   try {
     return await window.shopify.idToken();
   } catch {
