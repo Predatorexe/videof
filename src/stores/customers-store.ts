@@ -4,7 +4,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { customers as seed, type Customer } from "@/lib/mock-data";
+import type { Customer } from "@/lib/mock-data";
 import { customerFromRow, type CustomerRow } from "@/lib/adapters/customers";
 import { getShopId } from "@/stores/shop-store";
 import { subscribeShopHydration } from "@/lib/adapters/shop-hydration";
