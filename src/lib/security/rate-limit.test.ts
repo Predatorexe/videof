@@ -1,36 +1,56 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { rateLimit } from "./rate-limit.server";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RateLimitError } from "@/lib/errors";
 
-describe("rateLimit", () => {
+const rpcMock = vi.fn();
+
+vi.mock("@/integrations/supabase/client.server", () => ({
+  supabaseAdmin: { rpc: (...args: unknown[]) => rpcMock(...args) },
+}));
+
+async function loadModule() {
+  vi.resetModules();
+  return await import("./rate-limit.server");
+}
+
+describe("rateLimit (Supabase-backed)", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    rpcMock.mockReset();
   });
 
-  it("allows requests under the limit", () => {
-    for (let i = 0; i < 5; i++) {
-      expect(() => rateLimit({ key: "test-a", max: 5, windowMs: 1000 })).not.toThrow();
-    }
+  it("allows when the RPC reports allowed=true", async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ allowed: true, current_count: 1, reset_at: new Date(Date.now() + 1000).toISOString() }],
+      error: null,
+    });
+    const { rateLimit } = await loadModule();
+    await expect(rateLimit({ key: "k", max: 5, windowMs: 1000 })).resolves.toBeUndefined();
+    expect(rpcMock).toHaveBeenCalledWith("rate_limit_check", {
+      _key: "k",
+      _max: 5,
+      _window_ms: 1000,
+    });
   });
 
-  it("throws RateLimitError once the limit is reached", () => {
-    for (let i = 0; i < 3; i++) rateLimit({ key: "test-b", max: 3, windowMs: 1000 });
-    expect(() => rateLimit({ key: "test-b", max: 3, windowMs: 1000 })).toThrow(
-      RateLimitError,
-    );
+  it("throws RateLimitError when the RPC reports allowed=false", async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ allowed: false, current_count: 6, reset_at: new Date(Date.now() + 2000).toISOString() }],
+      error: null,
+    });
+    const { rateLimit } = await loadModule();
+    await expect(rateLimit({ key: "k", max: 5, windowMs: 1000 })).rejects.toBeInstanceOf(RateLimitError);
   });
 
-  it("resets the bucket after the window elapses", () => {
-    for (let i = 0; i < 2; i++) rateLimit({ key: "test-c", max: 2, windowMs: 1000 });
-    expect(() => rateLimit({ key: "test-c", max: 2, windowMs: 1000 })).toThrow();
-    vi.advanceTimersByTime(1500);
-    expect(() => rateLimit({ key: "test-c", max: 2, windowMs: 1000 })).not.toThrow();
+  it("fails-open by default when the backend errors", async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { message: "boom" } });
+    const { rateLimit } = await loadModule();
+    await expect(rateLimit({ key: "k", max: 5, windowMs: 1000 })).resolves.toBeUndefined();
   });
 
-  it("scopes buckets by key", () => {
-    for (let i = 0; i < 5; i++) rateLimit({ key: "test-d1", max: 5, windowMs: 1000 });
-    expect(() => rateLimit({ key: "test-d1", max: 5, windowMs: 1000 })).toThrow();
-    expect(() => rateLimit({ key: "test-d2", max: 5, windowMs: 1000 })).not.toThrow();
+  it("fails-closed when bypassOnError is false", async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { message: "boom" } });
+    const { rateLimit } = await loadModule();
+    await expect(
+      rateLimit({ key: "k", max: 5, windowMs: 1000, bypassOnError: false }),
+    ).rejects.toBeInstanceOf(RateLimitError);
   });
 });
