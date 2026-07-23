@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/widget/$id")({
             request.headers.get("x-forwarded-for") ??
             "unknown";
           // Cheap abuse cap. Real per-widget global limits belong in an edge KV / DO.
-          rateLimit({ key: `widget:${ip}`, max: 600, windowMs: 60_000 });
+          await rateLimit({ key: `widget:${ip}`, max: 600, windowMs: 60_000 });
 
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { data: widget, error } = await supabaseAdmin
@@ -59,9 +59,9 @@ export const Route = createFileRoute("/api/public/widget/$id")({
               headers: {
                 ...corsHeaders,
                 "Content-Type": "application/json",
-                // Edge-cache 60s; serve stale up to 5 min while re-validating.
+                // Browser 60s, edge 300s, serve stale up to 10 min while revalidating.
                 "Cache-Control":
-                  "public, max-age=30, s-maxage=60, stale-while-revalidate=300",
+                  "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
                 Vary: "Accept-Encoding",
               },
             },

@@ -68,7 +68,7 @@ export const Route = createFileRoute("/api/public/shopify/auth/callback")({
         const url = new URL(request.url);
         const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
         try {
-          rateLimit({ key: `shopify:callback:${ip}`, max: 60, windowMs: 60_000 });
+          await rateLimit({ key: `shopify:callback:${ip}`, max: 60, windowMs: 60_000 });
         } catch {
           return new Response("Too many requests", { status: 429 });
         }

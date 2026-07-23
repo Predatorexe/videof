@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/shopify/auth/install")({
 
         const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
         try {
-          rateLimit({ key: `shopify:install:${shop}:${ip}`, max: 30, windowMs: 60_000 });
+          await rateLimit({ key: `shopify:install:${shop}:${ip}`, max: 30, windowMs: 60_000 });
         } catch {
           return new Response("Too many install attempts", { status: 429 });
         }
