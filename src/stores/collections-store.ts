@@ -7,7 +7,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { collections as seed, type Collection } from "@/lib/mock-data";
+import type { Collection } from "@/lib/mock-data";
 import { newId } from "@/lib/mock-api";
 import { collectionFromRow, type CollectionRow } from "@/lib/adapters/collections";
 import { getShopId } from "@/stores/shop-store";
@@ -48,7 +48,7 @@ function reportError(scope: string, err: unknown) {
 }
 
 export const useCollectionsStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
 
@@ -123,5 +123,5 @@ export const useCollectionsStore = create<State>((set, get) => ({
 
 subscribeShopHydration({
   hydrate: (shopId) => useCollectionsStore.getState().hydrate(shopId),
-  reset: () => useCollectionsStore.setState({ items: seed, _shopId: null, _hydrated: false }),
+  reset: () => useCollectionsStore.setState({ items: [], _shopId: null, _hydrated: false }),
 });

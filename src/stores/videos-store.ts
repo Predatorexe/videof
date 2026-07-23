@@ -7,7 +7,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { videos as seed, type Video } from "@/lib/mock-data";
+import type { Video } from "@/lib/mock-data";
 import { newId } from "@/lib/mock-api";
 import { useShopStore, getShopId } from "@/stores/shop-store";
 import { videoFromRow, type VideoRow } from "@/lib/adapters/videos";
@@ -55,7 +55,7 @@ function reportError(scope: string, err: unknown) {
 }
 
 export const useVideosStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
 
@@ -218,7 +218,7 @@ if (typeof window !== "undefined") {
   useShopStore.subscribe((state, prev) => {
     if (state.shop?.id !== prev.shop?.id) {
       if (state.shop?.id) void useVideosStore.getState().hydrate(state.shop.id);
-      else useVideosStore.setState({ _shopId: null, _hydrated: false, items: seed });
+      else useVideosStore.setState({ _shopId: null, _hydrated: false, items: [] });
     }
   });
 }

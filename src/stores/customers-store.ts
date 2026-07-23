@@ -4,7 +4,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { customers as seed, type Customer } from "@/lib/mock-data";
+import type { Customer } from "@/lib/mock-data";
 import { customerFromRow, type CustomerRow } from "@/lib/adapters/customers";
 import { getShopId } from "@/stores/shop-store";
 import { subscribeShopHydration } from "@/lib/adapters/shop-hydration";
@@ -28,7 +28,7 @@ async function safeRehydrate() {
 }
 
 export const useCustomersStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
   hydrate: async (shopId: string) => {
@@ -59,5 +59,5 @@ export const useCustomersStore = create<State>((set, get) => ({
 
 subscribeShopHydration({
   hydrate: (shopId) => useCustomersStore.getState().hydrate(shopId),
-  reset: () => useCustomersStore.setState({ items: seed, _shopId: null, _hydrated: false }),
+  reset: () => useCustomersStore.setState({ items: [], _shopId: null, _hydrated: false }),
 });

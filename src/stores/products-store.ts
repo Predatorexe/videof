@@ -12,7 +12,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { products as seed, type Product } from "@/lib/mock-data";
+import type { Product } from "@/lib/mock-data";
 import { newId } from "@/lib/mock-api";
 import { useShopStore, getShopId } from "@/stores/shop-store";
 import { productFromRow, type ProductRow } from "@/lib/adapters/products";
@@ -66,7 +66,7 @@ function reportError(scope: string, err: unknown) {
 }
 
 export const useProductsStore = create<State>((set, get) => ({
-  items: seed,
+  items: [],
   _shopId: null,
   _hydrated: false,
 
@@ -215,7 +215,7 @@ if (typeof window !== "undefined") {
   useShopStore.subscribe((state, prev) => {
     if (state.shop?.id !== prev.shop?.id) {
       if (state.shop?.id) void useProductsStore.getState().hydrate(state.shop.id);
-      else useProductsStore.setState({ _shopId: null, _hydrated: false, items: seed });
+      else useProductsStore.setState({ _shopId: null, _hydrated: false, items: [] });
     }
   });
 }
