@@ -36,8 +36,14 @@ export function ShopifyAppBridge() {
     setStatus("resolving");
     (async () => {
       try {
-        // Prefer App Bridge session token when embedded — the serverFn
-        // middleware verifies it and resolves the shop server-side.
+        // Wait briefly for App Bridge to boot before deciding which auth
+        // path to use. Without this, the first render always loses the race
+        // and the app falls back to the signed-out/preview state even inside
+        // the Shopify admin iframe.
+        const deadline = Date.now() + 5000;
+        while (typeof window !== "undefined" && !window.shopify?.idToken && Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
         const hasEmbeddedToken = typeof window !== "undefined" && !!window.shopify?.idToken;
         const { data } = await supabase.auth.getSession();
         if (cancelled) return;
