@@ -627,6 +627,30 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          count: number
+          expires_at: string
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          expires_at: string
+          key: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          expires_at?: string
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       shop_oauth_states: {
         Row: {
           created_at: string
@@ -1121,6 +1145,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      rate_limit_check: {
+        Args: { _key: string; _max: number; _window_ms: number }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          reset_at: string
+        }[]
       }
     }
     Enums: {
