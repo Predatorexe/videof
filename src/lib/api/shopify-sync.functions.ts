@@ -214,7 +214,7 @@ export const syncShopifyCustomers = createServerFn({ method: "POST" })
     if (rows.length) {
       const { error } = await supabaseAdmin
         .from("customers")
-        .upsert(rows, { onConflict: "shopify_customer_id" });
+        .upsert(rows, { onConflict: "shop_id,shopify_customer_id" });
       if (error) throw new Error(`Customer upsert failed: ${error.message}`);
       synced += rows.length;
     }
