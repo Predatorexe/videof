@@ -1,5 +1,9 @@
+api_version = "2026-04"
+
+[[extensions]]
 name = "videofy-theme"
+handle = "videofy-theme"
 type = "theme"
 
-[build]
+[extensions.build]
 watch = ["assets/**/*", "blocks/**/*", "snippets/**/*", "locales/**/*"]
