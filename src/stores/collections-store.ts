@@ -7,7 +7,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { collections as seed, type Collection } from "@/lib/mock-data";
+import type { Collection } from "@/lib/mock-data";
 import { newId } from "@/lib/mock-api";
 import { collectionFromRow, type CollectionRow } from "@/lib/adapters/collections";
 import { getShopId } from "@/stores/shop-store";
