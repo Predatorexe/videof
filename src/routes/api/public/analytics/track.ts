@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/public/analytics/track")({
       POST: async ({ request }) => {
         try {
           const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
-          rateLimit({ key: `track:${ip}`, max: 120, windowMs: 60_000 });
+          await rateLimit({ key: `track:${ip}`, max: 120, windowMs: 60_000 });
 
           const body = await request.json();
           const parsed = analyticsBatchSchema.parse(body);

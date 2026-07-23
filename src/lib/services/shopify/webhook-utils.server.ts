@@ -34,7 +34,7 @@ export async function verifyAndParse<T = unknown>(request: Request): Promise<Ver
   // a flood of correctly-signed replays, and unauthenticated attackers
   // would fail verification but still hit the JSON parser first.
   try {
-    rateLimit({ key: `webhook:${domain}:${ip}`, max: 240, windowMs: 60_000 });
+    await rateLimit({ key: `webhook:${domain}:${ip}`, max: 240, windowMs: 60_000 });
   } catch {
     return new Response("Too many requests", { status: 429 });
   }
