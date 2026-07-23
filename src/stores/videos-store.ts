@@ -7,7 +7,7 @@
  */
 import { create } from "zustand";
 import { toast } from "sonner";
-import { videos as seed, type Video } from "@/lib/mock-data";
+import type { Video } from "@/lib/mock-data";
 import { newId } from "@/lib/mock-api";
 import { useShopStore, getShopId } from "@/stores/shop-store";
 import { videoFromRow, type VideoRow } from "@/lib/adapters/videos";
